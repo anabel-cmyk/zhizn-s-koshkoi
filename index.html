@@ -2,6 +2,7 @@
 <html lang="ru">
 
 <head>
+
     <meta charset="UTF-8">
 
     <meta
@@ -16,7 +17,11 @@
 
     <title>Жизнь с кошкой</title>
 
-    <link rel="stylesheet" href="style.css">
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
 </head>
 
 
@@ -42,7 +47,7 @@
     </main>
 
 
-    <!-- МОДАЛЬНОЕ ОКНО -->
+    <!-- МОДАЛЬНОЕ ОКНО ПРОФИЛЯ -->
 
     <div
         class="modal"
@@ -74,6 +79,8 @@
             <div class="form">
 
 
+                <!-- ИМЯ -->
+
                 <div class="form-field">
 
                     <label
@@ -94,25 +101,94 @@
                 </div>
 
 
-                <div class="form-field">
+                <!-- ДАТА РОЖДЕНИЯ -->
+
+                <div
+                    class="form-field"
+                    id="birthDateField"
+                >
 
                     <label
-                        for="catAge"
+                        for="catBirthDate"
+                        class="form-label"
+                    >
+                        Дата рождения
+                    </label>
+
+                    <input
+                        id="catBirthDate"
+                        class="input"
+                        type="date"
+                    >
+
+                    <button
+                        type="button"
+                        class="text-button"
+                        onclick="showAgeInput()"
+                    >
+                        Дата рождения неизвестна
+                    </button>
+
+                </div>
+
+
+                <!-- ВОЗРАСТ -->
+
+                <div
+                    class="age-field"
+                    id="ageField"
+                    hidden
+                >
+
+                    <label
                         class="form-label"
                     >
                         Возраст
                     </label>
 
-                    <input
-                        id="catAge"
-                        class="input"
-                        type="text"
-                        placeholder="Например, 4 года"
-                        autocomplete="off"
+
+                    <div class="age-row">
+
+                        <input
+                            id="catAgeValue"
+                            class="input age-input"
+                            type="number"
+                            min="0"
+                            max="30"
+                            placeholder="4"
+                        >
+
+
+                        <select
+                            id="catAgeUnit"
+                            class="input age-unit"
+                        >
+
+                            <option value="years">
+                                года
+                            </option>
+
+                            <option value="months">
+                                месяца
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <button
+                        type="button"
+                        class="text-button"
+                        onclick="showBirthDateInput()"
                     >
+                        Указать дату рождения
+                    </button>
 
                 </div>
 
+
+                <!-- КНОПКИ -->
 
                 <div class="form-actions">
 
@@ -123,6 +199,7 @@
                     >
                         Сохранить
                     </button>
+
 
                     <button
                         type="button"
