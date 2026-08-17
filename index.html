@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="description"
+        content="Жизнь с кошкой — спокойный уход за кошкой в одном месте."
+    >
+
+    <title>Жизнь с кошкой</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+
+<body>
+
+    <main class="app">
+
+        <header class="header">
+
+            <div class="logo">
+                Жизнь с кошкой
+            </div>
+
+            <div class="cat-icon">
+                🐈
+            </div>
+
+        </header>
+
+
+        <section id="content"></section>
+
+    </main>
+
+
+    <!-- МОДАЛЬНОЕ ОКНО -->
+
+    <div
+        class="modal"
+        id="modal"
+        aria-hidden="true"
+    >
+
+        <div class="modal-content">
+
+
+            <div class="modal-header">
+
+                <h2>
+                    Ваша кошка
+                </h2>
+
+                <button
+                    type="button"
+                    class="modal-close"
+                    onclick="closeModal()"
+                    aria-label="Закрыть"
+                >
+                    ×
+                </button>
+
+            </div>
+
+
+            <div class="form">
+
+
+                <div class="form-field">
+
+                    <label
+                        for="catName"
+                        class="form-label"
+                    >
+                        Имя кошки
+                    </label>
+
+                    <input
+                        id="catName"
+                        class="input"
+                        type="text"
+                        placeholder="Например, Микки"
+                        autocomplete="off"
+                    >
+
+                </div>
+
+
+                <div class="form-field">
+
+                    <label
+                        for="catAge"
+                        class="form-label"
+                    >
+                        Возраст
+                    </label>
+
+                    <input
+                        id="catAge"
+                        class="input"
+                        type="text"
+                        placeholder="Например, 4 года"
+                        autocomplete="off"
+                    >
+
+                </div>
+
+
+                <div class="form-actions">
+
+                    <button
+                        type="button"
+                        class="button"
+                        onclick="saveCat()"
+                    >
+                        Сохранить
+                    </button>
+
+                    <button
+                        type="button"
+                        class="button button-secondary"
+                        onclick="closeModal()"
+                    >
+                        Отмена
+                    </button>
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <script src="app.js"></script>
+
+</body>
+
+</html>
