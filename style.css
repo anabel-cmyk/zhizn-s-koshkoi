@@ -1,0 +1,579 @@
+* {
+    box-sizing: border-box;
+}
+
+:root {
+    --background: #f7f5f0;
+    --surface: #ffffff;
+    --text: #171717;
+    --muted: #777777;
+    --placeholder: #777777;
+    --line: #eeeeee;
+    --soft: #f1efea;
+}
+
+html {
+    min-height: 100%;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+    background: var(--background);
+    color: var(--text);
+
+    -webkit-font-smoothing: antialiased;
+}
+
+button,
+input {
+    font: inherit;
+}
+
+button {
+    -webkit-tap-highlight-color: transparent;
+}
+
+.app {
+    width: 100%;
+    max-width: 480px;
+
+    min-height: 100vh;
+
+    margin: 0 auto;
+
+    padding:
+        24px
+        18px
+        40px;
+}
+
+
+/* ================================
+   HEADER
+================================ */
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    margin-bottom: 30px;
+}
+
+.logo {
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+.cat-icon {
+    width: 42px;
+    height: 42px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background: var(--text);
+    color: white;
+
+    font-size: 20px;
+}
+
+
+/* ================================
+   WELCOME
+================================ */
+
+.welcome {
+    margin-bottom: 28px;
+}
+
+.welcome h1 {
+    margin: 0 0 10px;
+
+    font-size: 34px;
+    line-height: 1.05;
+
+    letter-spacing: -1.5px;
+}
+
+.welcome p {
+    width: 100%;
+    max-width: 390px;
+
+    margin: 0;
+
+    color: var(--muted);
+
+    font-size: 15.5px;
+    line-height: 1.5;
+
+    letter-spacing: -0.1px;
+}
+
+
+/* ================================
+   CARDS
+================================ */
+
+.card {
+    margin-bottom: 14px;
+
+    padding: 20px;
+
+    background: var(--surface);
+
+    border-radius: 22px;
+
+    box-shadow:
+        0 2px 12px
+        rgba(0, 0, 0, 0.04);
+}
+
+
+/* ================================
+   EMPTY STATE
+================================ */
+
+.empty {
+    text-align: center;
+
+    padding:
+        38px
+        20px;
+}
+
+.empty-icon {
+    margin-bottom: 12px;
+
+    font-size: 42px;
+}
+
+.empty h2 {
+    margin: 0 0 8px;
+
+    font-size: 21px;
+
+    letter-spacing: -0.4px;
+}
+
+.empty p {
+    max-width: 310px;
+
+    margin:
+        0 auto
+        22px;
+
+    color: var(--muted);
+
+    line-height: 1.5;
+}
+
+
+/* ================================
+   CAT CARD
+================================ */
+
+.cat-card {
+    display: flex;
+    align-items: center;
+
+    gap: 16px;
+}
+
+.cat-avatar {
+    width: 64px;
+    height: 64px;
+
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 18px;
+
+    background: var(--text);
+    color: white;
+
+    font-size: 30px;
+}
+
+.cat-info h2 {
+    margin: 0 0 5px;
+
+    font-size: 21px;
+
+    letter-spacing: -0.4px;
+}
+
+.cat-info p {
+    margin: 0;
+
+    color: var(--muted);
+
+    font-size: 14px;
+}
+
+
+/* ================================
+   SECTIONS
+================================ */
+
+.section-title {
+    margin:
+        28px
+        4px
+        12px;
+
+    font-size: 19px;
+    font-weight: 700;
+
+    letter-spacing: -0.3px;
+}
+
+
+/* ================================
+   TASKS
+================================ */
+
+.task {
+    display: flex;
+    align-items: center;
+
+    gap: 14px;
+
+    padding: 14px 0;
+
+    border-bottom:
+        1px solid
+        var(--line);
+}
+
+.task:first-child {
+    padding-top: 0;
+}
+
+.task:last-child {
+    padding-bottom: 0;
+
+    border-bottom: none;
+}
+
+.task-icon {
+    width: 40px;
+    height: 40px;
+
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 13px;
+
+    background: var(--soft);
+
+    font-size: 19px;
+}
+
+.task-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.task-name {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.task-time {
+    margin-top: 3px;
+
+    color: #888888;
+
+    font-size: 13px;
+}
+
+.check {
+    width: 25px;
+    height: 25px;
+
+    flex-shrink: 0;
+
+    position: relative;
+
+    border:
+        1.5px solid
+        #bbbbbb;
+
+    border-radius: 50%;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.15s ease;
+}
+
+.check:active {
+    transform: scale(0.9);
+}
+
+.check.done {
+    background: var(--text);
+    border-color: var(--text);
+}
+
+.check.done::after {
+    content: "✓";
+
+    position: absolute;
+
+    left: 5px;
+    top: 2px;
+
+    color: white;
+
+    font-size: 14px;
+}
+
+
+/* ================================
+   BUTTONS
+================================ */
+
+.button {
+    width: 100%;
+
+    border: none;
+
+    border-radius: 15px;
+
+    padding:
+        15px
+        18px;
+
+    background: var(--text);
+    color: white;
+
+    font-size: 16px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+        transform 0.15s ease,
+        opacity 0.15s ease;
+}
+
+.button:active {
+    transform: scale(0.98);
+}
+
+.button:hover {
+    opacity: 0.92;
+}
+
+
+/* Кнопка отмены */
+
+.button.close {
+    margin-top: 8px;
+
+    background: transparent;
+
+    border:
+        1px solid
+        #d4d1cb;
+
+    color: #4f4f4f;
+}
+
+.button.close:hover {
+    background: #eeece7;
+
+    opacity: 1;
+}
+
+
+/* ================================
+   MODAL
+================================ */
+
+.modal {
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 100;
+
+    display: none;
+
+    align-items: flex-end;
+    justify-content: center;
+
+    padding: 0;
+
+    background:
+        rgba(0, 0, 0, 0.35);
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    width: 100%;
+    max-width: 480px;
+
+    padding:
+        24px
+        20px
+        30px;
+
+    background: var(--background);
+
+    border-radius:
+        28px
+        28px
+        0
+        0;
+
+    box-shadow:
+        0 -8px 30px
+        rgba(0, 0, 0, 0.08);
+}
+
+.modal-header {
+    display: flex;
+
+    align-items: center;
+    justify-content: space-between;
+
+    margin-bottom: 22px;
+}
+
+.modal-header h2 {
+    margin: 0;
+
+    font-size: 23px;
+
+    letter-spacing: -0.5px;
+}
+
+.modal-close {
+    width: 36px;
+    height: 36px;
+
+    border: none;
+
+    border-radius: 50%;
+
+    background: var(--soft);
+
+    color: var(--text);
+
+    font-size: 24px;
+
+    line-height: 1;
+
+    cursor: pointer;
+}
+
+
+/* ================================
+   FORM
+================================ */
+
+.field {
+    display: block;
+
+    margin-bottom: 14px;
+}
+
+.field span {
+    display: block;
+
+    margin:
+        0
+        0
+        7px
+        3px;
+
+    color: #555555;
+
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.input {
+    width: 100%;
+
+    border:
+        1px solid
+        #dddddd;
+
+    border-radius: 14px;
+
+    padding:
+        15px;
+
+    outline: none;
+
+    background: white;
+
+    color: var(--text);
+
+    font-size: 16px;
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+
+/* Текст-подсказка теперь немного темнее */
+
+.input::placeholder {
+    color: var(--placeholder);
+
+    opacity: 1;
+}
+
+.input:focus {
+    border-color: var(--text);
+
+    box-shadow:
+        0 0 0 3px
+        rgba(23, 23, 23, 0.06);
+}
+
+
+/* ================================
+   DESKTOP
+================================ */
+
+@media (min-width: 600px) {
+
+    body {
+        padding: 30px 0;
+    }
+
+    .app {
+        min-height: auto;
+    }
+
+}

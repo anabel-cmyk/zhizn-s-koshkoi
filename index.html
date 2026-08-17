@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Жизнь с кошкой</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="app">
+
+    <div class="header">
+        <div class="logo">Жизнь с кошкой</div>
+        <div class="cat-icon">🐈</div>
+    </div>
+
+    <div id="content"></div>
+
+</div>
+
+
+<div class="modal" id="modal">
+
+    <div class="modal-content">
+
+        <h2>Ваша кошка</h2>
+
+        <input
+            class="input"
+            id="catName"
+            type="text"
+            placeholder="Имя кошки"
+        >
+
+        <input
+            class="input"
+            id="catAge"
+            type="text"
+            placeholder="Возраст, например: 4 года"
+        >
+
+        <button class="button" onclick="saveCat()">
+            Сохранить
+        </button>
+
+        <button class="button close" onclick="closeModal()">
+            Отмена
+        </button>
+
+    </div>
+
+</div>
+
+
+<script src="app.js"></script>
+
+</body>
+</html>
