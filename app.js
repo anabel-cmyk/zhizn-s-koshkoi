@@ -1,10 +1,11 @@
 // ========================================
 // ЖИЗНЬ С КОШКОЙ
-// MVP 0.6
-// Профиль + задачи + история
+// MVP 0.8.1
+// Профиль + несколько кошек + задачи + дневник
 // ========================================
 
-const STORAGE_KEY = "cat";
+const CATS_KEY = "cats";
+const ACTIVE_CAT_KEY = "activeCatId";
 const TASKS_KEY = "dailyTasks";
 const HISTORY_KEY = "taskHistory";
 
@@ -13,12 +14,133 @@ const HISTORY_KEY = "taskHistory";
 // START
 // ========================================
 
-document.addEventListener(
-    "DOMContentLoaded",
-    () => {
-        renderApp();
+document.addEventListener("DOMContentLoaded", () => {
+    migrateOldCat();
+    renderApp();
+});
+
+
+// ========================================
+// CATS
+// ========================================
+
+function getCats() {
+
+    const saved = localStorage.getItem(CATS_KEY);
+
+    if (!saved) {
+        return [];
     }
-);
+
+    try {
+        const cats = JSON.parse(saved);
+
+        return Array.isArray(cats)
+            ? cats
+            : [];
+
+    } catch {
+        return [];
+    }
+}
+
+
+function saveCats(cats) {
+
+    localStorage.setItem(
+        CATS_KEY,
+        JSON.stringify(cats)
+    );
+}
+
+
+function getActiveCatId() {
+
+    return localStorage.getItem(
+        ACTIVE_CAT_KEY
+    );
+}
+
+
+function setActiveCatId(id) {
+
+    localStorage.setItem(
+        ACTIVE_CAT_KEY,
+        id
+    );
+}
+
+
+function getActiveCat() {
+
+    const cats = getCats();
+
+    if (!cats.length) {
+        return null;
+    }
+
+    const activeId = getActiveCatId();
+
+    return (
+        cats.find(cat => cat.id === activeId)
+        || cats[0]
+    );
+}
+
+
+// ========================================
+// MIGRATION FROM MVP 0.7
+// ========================================
+
+function migrateOldCat() {
+
+    const oldCat = localStorage.getItem("cat");
+
+    if (!oldCat) {
+        return;
+    }
+
+    const existingCats = getCats();
+
+    if (existingCats.length) {
+        return;
+    }
+
+    try {
+
+        const cat = JSON.parse(oldCat);
+
+        const migratedCat = {
+            ...cat,
+            id: createId(),
+            createdAt:
+                cat.createdAt
+                || new Date().toISOString()
+        };
+
+        saveCats([migratedCat]);
+
+        setActiveCatId(
+            migratedCat.id
+        );
+
+    } catch {
+        // ничего не делаем
+    }
+}
+
+
+function createId() {
+
+    return (
+        "cat_" +
+        Date.now() +
+        "_" +
+        Math.random()
+            .toString(36)
+            .slice(2, 8)
+    );
+}
 
 
 // ========================================
@@ -26,6 +148,282 @@ document.addEventListener(
 // ========================================
 
 function openModal() {
+
+    const modal =
+        document.getElementById("modal");
+
+    if (!modal) {
+        return;
+    }
+
+    modal.classList.add("active");
+
+    modal.setAttribute(
+        "aria-hidden",
+        "false"
+    );
+
+    resetForm();
+
+    setTimeout(() => {
+
+        const input =
+            document.getElementById("catName");
+
+        if (input) {
+            input.focus();
+        }
+
+    }, 100);
+}
+
+
+function closeModal() {
+
+    const modal =
+        document.getElementById("modal");
+
+    if (!modal) {
+        return;
+    }
+
+    modal.classList.remove("active");
+
+    modal.setAttribute(
+        "aria-hidden",
+        "true"
+    );
+
+    resetForm();
+}
+
+
+// ========================================
+// FORM
+// ========================================
+
+function resetForm() {
+
+    const name =
+        document.getElementById("catName");
+
+    const birthDate =
+        document.getElementById("catBirthDate");
+
+    const ageValue =
+        document.getElementById("catAgeValue");
+
+    const ageUnit =
+        document.getElementById("catAgeUnit");
+
+    if (name) {
+        name.value = "";
+    }
+
+    if (birthDate) {
+        birthDate.value = "";
+    }
+
+    if (ageValue) {
+        ageValue.value = "";
+    }
+
+    if (ageUnit) {
+        ageUnit.value = "years";
+    }
+
+    showBirthDateInput();
+}
+
+
+function showAgeInput() {
+
+    const birthDateField =
+        document.getElementById("birthDateField");
+
+    const ageField =
+        document.getElementById("ageField");
+
+    const birthDate =
+        document.getElementById("catBirthDate");
+
+    const ageValue =
+        document.getElementById("catAgeValue");
+
+    if (birthDateField) {
+        birthDateField.hidden = true;
+    }
+
+    if (ageField) {
+        ageField.hidden = false;
+    }
+
+    if (birthDate) {
+        birthDate.value = "";
+    }
+
+    if (ageValue) {
+        ageValue.focus();
+    }
+}
+
+
+function showBirthDateInput() {
+
+    const birthDateField =
+        document.getElementById("birthDateField");
+
+    const ageField =
+        document.getElementById("ageField");
+
+    const ageValue =
+        document.getElementById("catAgeValue");
+
+    if (birthDateField) {
+        birthDateField.hidden = false;
+    }
+
+    if (ageField) {
+        ageField.hidden = true;
+    }
+
+    if (ageValue) {
+        ageValue.value = "";
+    }
+}
+
+
+// ========================================
+// SAVE CAT
+// ========================================
+
+function saveCat() {
+
+    const name =
+        document
+            .getElementById("catName")
+            .value
+            .trim();
+
+    const birthDate =
+        document.getElementById("catBirthDate")
+            .value;
+
+    const ageValue =
+        document.getElementById("catAgeValue")
+            .value;
+
+    const ageUnit =
+        document.getElementById("catAgeUnit")
+            .value;
+
+    const ageField =
+        document.getElementById("ageField");
+
+
+    if (!name) {
+
+        alert("Введите имя кошки");
+
+        return;
+    }
+
+
+    if (
+        ageField.hidden &&
+        !birthDate
+    ) {
+
+        alert(
+            "Укажите дату рождения или возраст кошки"
+        );
+
+        return;
+    }
+
+
+    if (
+        !ageField.hidden &&
+        !ageValue
+    ) {
+
+        alert("Укажите возраст кошки");
+
+        return;
+    }
+
+
+    const cats = getCats();
+
+    const activeCat =
+        getActiveCat();
+
+
+    const cat = {
+
+        id:
+            activeCat?.id
+            || createId(),
+
+        name,
+
+        birthDate:
+            ageField.hidden
+                ? birthDate
+                : null,
+
+        ageValue:
+            ageField.hidden
+                ? null
+                : Number(ageValue),
+
+        ageUnit:
+            ageField.hidden
+                ? null
+                : ageUnit,
+
+        createdAt:
+            activeCat?.createdAt
+            || new Date().toISOString()
+
+    };
+
+
+    const index =
+        cats.findIndex(
+            item =>
+                item.id === cat.id
+        );
+
+
+    if (index >= 0) {
+
+        cats[index] = cat;
+
+    } else {
+
+        cats.push(cat);
+
+    }
+
+
+    saveCats(cats);
+
+    setActiveCatId(cat.id);
+
+    closeModal();
+
+    renderApp();
+}
+
+
+// ========================================
+// ADD NEW CAT
+// ========================================
+
+function addNewCat() {
+
+    resetForm();
 
     const modal =
         document.getElementById("modal");
@@ -50,202 +448,76 @@ function openModal() {
 }
 
 
-function closeModal() {
+// ========================================
+// EDIT CURRENT CAT
+// ========================================
+
+function openModalWithCurrentCat() {
+
+    const cat = getActiveCat();
+
+    if (!cat) {
+
+        openModal();
+
+        return;
+    }
+
+
+    document.getElementById(
+        "catName"
+    ).value =
+        cat.name || "";
+
+
+    if (cat.birthDate) {
+
+        showBirthDateInput();
+
+        document.getElementById(
+            "catBirthDate"
+        ).value =
+            cat.birthDate;
+
+    } else {
+
+        showAgeInput();
+
+        document.getElementById(
+            "catAgeValue"
+        ).value =
+            cat.ageValue || "";
+
+        document.getElementById(
+            "catAgeUnit"
+        ).value =
+            cat.ageUnit || "years";
+    }
+
 
     const modal =
         document.getElementById("modal");
 
-    modal.classList.remove("active");
+    modal.classList.add("active");
 
     modal.setAttribute(
         "aria-hidden",
-        "true"
+        "false"
     );
-
-    resetForm();
 }
 
 
 // ========================================
-// FORM
+// SWITCH CAT
 // ========================================
 
-function resetForm() {
+function switchCat(id) {
 
-    document.getElementById(
-        "catName"
-    ).value = "";
-
-    document.getElementById(
-        "catBirthDate"
-    ).value = "";
-
-    document.getElementById(
-        "catAgeValue"
-    ).value = "";
-
-    document.getElementById(
-        "catAgeUnit"
-    ).value = "years";
-
-    showBirthDateInput();
-}
-
-
-function showAgeInput() {
-
-    document.getElementById(
-        "birthDateField"
-    ).hidden = true;
-
-    document.getElementById(
-        "ageField"
-    ).hidden = false;
-
-    document.getElementById(
-        "catBirthDate"
-    ).value = "";
-
-    document.getElementById(
-        "catAgeValue"
-    ).focus();
-}
-
-
-function showBirthDateInput() {
-
-    document.getElementById(
-        "birthDateField"
-    ).hidden = false;
-
-    document.getElementById(
-        "ageField"
-    ).hidden = true;
-
-    document.getElementById(
-        "catAgeValue"
-    ).value = "";
-
-    document.getElementById(
-        "catBirthDate"
-    ).focus();
-}
-
-
-// ========================================
-// SAVE CAT
-// ========================================
-
-function saveCat() {
-
-    const name =
-        document
-            .getElementById("catName")
-            .value
-            .trim();
-
-    const birthDate =
-        document.getElementById(
-            "catBirthDate"
-        ).value;
-
-    const ageValue =
-        document.getElementById(
-            "catAgeValue"
-        ).value;
-
-    const ageUnit =
-        document.getElementById(
-            "catAgeUnit"
-        ).value;
-
-    const ageField =
-        document.getElementById(
-            "ageField"
-        );
-
-
-    if (!name) {
-
-        alert(
-            "Введите имя кошки"
-        );
-
+    if (!id) {
         return;
     }
 
-
-    if (
-        ageField.hidden &&
-        !birthDate
-    ) {
-
-        alert(
-            "Укажите дату рождения или возраст кошки"
-        );
-
-        return;
-    }
-
-
-    if (
-        !ageField.hidden &&
-        !ageValue
-    ) {
-
-        alert(
-            "Укажите возраст кошки"
-        );
-
-        return;
-    }
-
-
-    const oldCat =
-        localStorage.getItem(
-            STORAGE_KEY
-        );
-
-
-    const previousCat =
-        oldCat
-            ? JSON.parse(oldCat)
-            : null;
-
-
-    const cat = {
-
-        name: name,
-
-        birthDate:
-            ageField.hidden
-                ? birthDate
-                : null,
-
-        ageValue:
-            ageField.hidden
-                ? null
-                : Number(ageValue),
-
-        ageUnit:
-            ageField.hidden
-                ? null
-                : ageUnit,
-
-        createdAt:
-            previousCat?.createdAt ||
-            new Date().toISOString()
-
-    };
-
-
-    localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(cat)
-    );
-
-
-    closeModal();
+    setActiveCatId(id);
 
     renderApp();
 }
@@ -257,13 +529,9 @@ function saveCat() {
 
 function renderApp() {
 
-    const savedCat =
-        localStorage.getItem(
-            STORAGE_KEY
-        );
+    const cats = getCats();
 
-
-    if (!savedCat) {
+    if (!cats.length) {
 
         renderEmptyState();
 
@@ -271,25 +539,20 @@ function renderApp() {
     }
 
 
-    const cat =
-        JSON.parse(savedCat);
-
+    const cat = getActiveCat();
 
     renderCatDashboard(cat);
 }
 
 
 // ========================================
-// EMPTY STATE
+// EMPTY
 // ========================================
 
 function renderEmptyState() {
 
     const content =
-        document.getElementById(
-            "content"
-        );
-
+        document.getElementById("content");
 
     content.innerHTML = `
 
@@ -337,16 +600,13 @@ function renderEmptyState() {
 
 
 // ========================================
-// CAT DASHBOARD
+// DASHBOARD
 // ========================================
 
 function renderCatDashboard(cat) {
 
     const content =
-        document.getElementById(
-            "content"
-        );
-
+        document.getElementById("content");
 
     const tasks =
         getDailyTasks();
@@ -357,16 +617,18 @@ function renderCatDashboard(cat) {
         <div class="welcome">
 
             <h1>
-                Сегодня<br>
-                с ${escapeHtml(cat.name)}.
+                Сегодня
             </h1>
 
-            <p>
-                Небольшие заботы каждый день —
-                большая польза.
+            <p class="welcome-subtitle">
+                План ухода за
+                ${escapeHtml(cat.name)}.
             </p>
 
         </div>
+
+
+        ${createCatSwitcher()}
 
 
         <div class="card cat-card">
@@ -398,11 +660,11 @@ function renderCatDashboard(cat) {
 
         <div class="card">
 
-            ${tasks
-                .map(task =>
-                    createTask(task)
-                )
-                .join("")}
+            ${
+                tasks
+                    .map(task => createTask(task))
+                    .join("")
+            }
 
         </div>
 
@@ -411,7 +673,7 @@ function renderCatDashboard(cat) {
             class="button"
             onclick="openHistory()"
         >
-            История
+            Дневник
         </button>
 
 
@@ -427,6 +689,85 @@ function renderCatDashboard(cat) {
 
 
 // ========================================
+// CAT SWITCHER
+// ========================================
+
+function createCatSwitcher() {
+
+    const cats = getCats();
+
+    if (!cats.length) {
+        return "";
+    }
+
+
+    const activeId =
+        getActiveCatId();
+
+
+    return `
+
+        <div class="cat-switcher">
+
+            <div class="cat-switcher-list">
+
+                ${
+                    cats
+                        .map(
+                            cat => `
+
+                                <button
+                                    class="
+                                        cat-switcher-item
+                                        ${
+                                            cat.id === activeId
+                                                ? "active"
+                                                : ""
+                                        }
+                                    "
+                                    onclick="
+                                        switchCat(
+                                            '${cat.id}'
+                                        )
+                                    "
+                                >
+
+                                    <span
+                                        class="cat-switcher-avatar"
+                                    >
+                                        🐈
+                                    </span>
+
+                                    <span>
+                                        ${escapeHtml(
+                                            cat.name
+                                        )}
+                                    </span>
+
+                                </button>
+
+                            `
+                        )
+                        .join("")
+                }
+
+            </div>
+
+
+            <button
+                class="add-cat-button"
+                onclick="addNewCat()"
+            >
+                ＋ Добавить кошку
+            </button>
+
+        </div>
+
+    `;
+}
+
+
+// ========================================
 // AGE
 // ========================================
 
@@ -435,7 +776,9 @@ function getCatAgeText(cat) {
     if (cat.birthDate) {
 
         const birth =
-            new Date(cat.birthDate);
+            new Date(
+                `${cat.birthDate}T12:00:00`
+            );
 
         const now =
             new Date();
@@ -452,8 +795,7 @@ function getCatAgeText(cat) {
 
 
         if (
-            now.getDate()
-            <
+            now.getDate() <
             birth.getDate()
         ) {
 
@@ -495,9 +837,7 @@ function getCatAgeText(cat) {
         }
 
 
-        return formatYears(
-            years
-        );
+        return formatYears(years);
     }
 
 
@@ -571,9 +911,7 @@ function pluralize(
     }
 
 
-    if (
-        last === 1
-    ) {
+    if (last === 1) {
 
         return `${number} ${one}`;
     }
@@ -589,80 +927,6 @@ function pluralize(
 
 
     return `${number} ${many}`;
-}
-
-
-// ========================================
-// EDIT PROFILE
-// ========================================
-
-function openModalWithCurrentCat() {
-
-    const saved =
-        localStorage.getItem(
-            STORAGE_KEY
-        );
-
-
-    if (!saved) {
-
-        openModal();
-
-        return;
-    }
-
-
-    const cat =
-        JSON.parse(saved);
-
-
-    document.getElementById(
-        "catName"
-    ).value =
-        cat.name || "";
-
-
-    if (cat.birthDate) {
-
-        showBirthDateInput();
-
-
-        document.getElementById(
-            "catBirthDate"
-        ).value =
-            cat.birthDate;
-
-    } else {
-
-        showAgeInput();
-
-
-        document.getElementById(
-            "catAgeValue"
-        ).value =
-            cat.ageValue || "";
-
-
-        document.getElementById(
-            "catAgeUnit"
-        ).value =
-            cat.ageUnit || "years";
-    }
-
-
-    const modal =
-        document.getElementById(
-            "modal"
-        );
-
-
-    modal.classList.add("active");
-
-
-    modal.setAttribute(
-        "aria-hidden",
-        "false"
-    );
 }
 
 
@@ -687,6 +951,9 @@ function getDefaultTasks() {
             frequency:
                 "daily",
 
+            statistics:
+                "sessions",
+
             done: false
         },
 
@@ -704,6 +971,9 @@ function getDefaultTasks() {
             frequency:
                 "daily",
 
+            statistics:
+                "none",
+
             done: false
         },
 
@@ -720,6 +990,9 @@ function getDefaultTasks() {
 
             frequency:
                 "weekly",
+
+            statistics:
+                "monthly",
 
             targetPerWeek:
                 2,
@@ -746,9 +1019,7 @@ function getTodayKey() {
 }
 
 
-function formatDateKey(
-    date
-) {
+function formatDateKey(date) {
 
     return [
 
@@ -756,17 +1027,11 @@ function formatDateKey(
 
         String(
             date.getMonth() + 1
-        ).padStart(
-            2,
-            "0"
-        ),
+        ).padStart(2, "0"),
 
         String(
             date.getDate()
-        ).padStart(
-            2,
-            "0"
-        )
+        ).padStart(2, "0")
 
     ].join("-");
 }
@@ -781,11 +1046,8 @@ function getDailyTasks() {
     const today =
         getTodayKey();
 
-
     const saved =
-        localStorage.getItem(
-            TASKS_KEY
-        );
+        localStorage.getItem(TASKS_KEY);
 
 
     if (!saved) {
@@ -793,12 +1055,10 @@ function getDailyTasks() {
         const tasks =
             getDefaultTasks();
 
-
         saveDailyTasks(
             today,
             tasks
         );
-
 
         return tasks;
     }
@@ -808,9 +1068,7 @@ function getDailyTasks() {
         JSON.parse(saved);
 
 
-    if (
-        data.date !== today
-    ) {
+    if (data.date !== today) {
 
         saveDayToHistory(
             data.date,
@@ -843,14 +1101,12 @@ function getDailyTasks() {
                 const currentTask =
                     defaultTasks.find(
                         task =>
-                            task.id
-                            ===
+                            task.id ===
                             oldTask.id
                     );
 
 
                 if (!currentTask) {
-
                     return oldTask;
                 }
 
@@ -874,8 +1130,7 @@ function getDailyTasks() {
             const exists =
                 updatedTasks.some(
                     task =>
-                        task.id
-                        ===
+                        task.id ===
                         defaultTask.id
                 );
 
@@ -911,9 +1166,8 @@ function saveDailyTasks(
         TASKS_KEY,
         JSON.stringify({
 
-            date: date,
-
-            tasks: tasks
+            date,
+            tasks
 
         })
     );
@@ -924,9 +1178,7 @@ function saveDailyTasks(
 // TASK UI
 // ========================================
 
-function createTask(
-    task
-) {
+function createTask(task) {
 
     return `
 
@@ -956,12 +1208,19 @@ function createTask(
 
 
             <div
-                class="check ${
-                    task.done
-                        ? "done"
-                        : ""
-                }"
-                onclick="toggleTask('${task.id}')"
+                class="
+                    check
+                    ${
+                        task.done
+                            ? "done"
+                            : ""
+                    }
+                "
+                onclick="
+                    toggleTask(
+                        '${task.id}'
+                    )
+                "
                 role="button"
                 aria-label="Отметить выполненным"
             ></div>
@@ -973,12 +1232,10 @@ function createTask(
 
 
 // ========================================
-// TOGGLE TASK
+// TOGGLE
 // ========================================
 
-function toggleTask(
-    taskId
-) {
+function toggleTask(taskId) {
 
     const saved =
         localStorage.getItem(
@@ -1046,9 +1303,7 @@ function getHistory() {
 
     try {
 
-        return JSON.parse(
-            saved
-        );
+        return JSON.parse(saved);
 
     } catch {
 
@@ -1058,15 +1313,11 @@ function getHistory() {
 }
 
 
-function saveHistory(
-    history
-) {
+function saveHistory(history) {
 
     localStorage.setItem(
         HISTORY_KEY,
-        JSON.stringify(
-            history
-        )
+        JSON.stringify(history)
     );
 }
 
@@ -1076,11 +1327,7 @@ function saveDayToHistory(
     tasks
 ) {
 
-    if (
-        !date ||
-        !tasks
-    ) {
-
+    if (!date || !tasks) {
         return;
     }
 
@@ -1110,6 +1357,10 @@ function saveDayToHistory(
                     frequency:
                         task.frequency,
 
+                    statistics:
+                        task.statistics ||
+                        null,
+
                     targetPerWeek:
                         task.targetPerWeek ||
                         null,
@@ -1127,22 +1378,18 @@ function saveDayToHistory(
     };
 
 
-    saveHistory(
-        history
-    );
+    saveHistory(history);
 }
 
 
 // ========================================
-// HISTORY
+// DIARY
 // ========================================
 
 function openHistory() {
 
     const content =
-        document.getElementById(
-            "content"
-        );
+        document.getElementById("content");
 
 
     const today =
@@ -1164,10 +1411,7 @@ function openHistory() {
 
 
     const currentMonth =
-        today.slice(
-            0,
-            7
-        );
+        today.slice(0, 7);
 
 
     const previousMonth =
@@ -1176,54 +1420,11 @@ function openHistory() {
         );
 
 
-    const teethCurrent =
-        countTaskForMonth(
+    const statisticTasks =
+        getStatisticTasks(
+            currentTasks,
             history,
-            currentMonth,
-            "teeth"
-        );
-
-
-    const teethPrevious =
-        countTaskForMonth(
-            history,
-            previousMonth,
-            "teeth"
-        );
-
-
-    const target =
-        getMonthlyTarget(
-            history,
-            currentMonth,
-            "teeth"
-        );
-
-
-    const previousTarget =
-        getMonthlyTarget(
-            history,
-            previousMonth,
-            "teeth"
-        );
-
-
-    const currentMonthName =
-        getMonthPrepositional(
             currentMonth
-        );
-
-
-    const previousMonthName =
-        getMonthPrepositional(
-            previousMonth
-        );
-
-
-    const last7 =
-        getLastDays(
-            history,
-            7
         );
 
 
@@ -1240,150 +1441,29 @@ function openHistory() {
 
 
             <h1>
-                История
+                Дневник
             </h1>
 
         </div>
 
 
-        <div class="card history-summary">
-
-            <div class="history-summary-label">
-                Уход за зубами
-            </div>
-
-
-            <div class="history-summary-number">
-                ${teethCurrent}
-            </div>
-
-
-            <div class="history-summary-caption">
-
-                ${formatCompletedText(
-                    teethCurrent,
-                    currentMonthName
-                )}
-
-            </div>
-
-
-            <div class="history-target">
-
-                ${
-                    teethCurrent >= target
-
-                        ? `
-                            <span class="history-target-success">
-                                ✓ Цель достигнута · ${target} раз
-                            </span>
-                          `
-
-                        : `
-                            <span>
-                                Цель · ${target}+ раз
-                            </span>
-                          `
-                }
-
-            </div>
-
-
-            <div class="history-progress">
-
-                <div
-                    class="history-progress-fill"
-                    style="
-                        width:
-                        ${Math.min(
-                            teethCurrent /
-                            target *
-                            100,
-                            100
-                        )}%
-                    "
-                ></div>
-
-            </div>
-
-        </div>
-
-
         ${
-            teethPrevious !== null
+            statisticTasks.length
 
-                ? `
-
-                    <div class="card history-previous">
-
-                        <div class="history-summary-label">
-                            ${previousMonthName}
-                        </div>
-
-
-                        <div class="history-summary-number small">
-                            ${teethPrevious}
-                        </div>
-
-
-                        <div class="history-summary-caption">
-
-                            ${formatCompletedText(
-                                teethPrevious,
-                                previousMonthName
-                            )}
-
-                        </div>
-
-
-                        <div class="history-target">
-
-                            ${
-                                teethPrevious >=
-                                previousTarget
-
-                                    ? `
-                                        <span class="history-target-success">
-                                            ✓ Цель достигнута
-                                        </span>
-                                      `
-
-                                    : `
-                                        <span>
-                                            Цель · ${previousTarget}+ раз
-                                        </span>
-                                      `
-                            }
-
-                        </div>
-
-                    </div>
-
-                  `
-
-                : ""
-        }
-
-
-        <div class="section-title">
-            Последние 7 дней
-        </div>
-
-
-        ${
-            last7.length
-
-                ? last7
+                ? statisticTasks
                     .map(
-                        item =>
-                            createHistoryDay(
-                                item.date,
-                                item.data
+                        task =>
+                            createStatisticCard(
+                                task,
+                                history,
+                                currentMonth,
+                                previousMonth
                             )
                     )
                     .join("")
 
                 : `
+
                     <div class="card history-empty">
 
                         <div class="empty-icon">
@@ -1391,7 +1471,7 @@ function openHistory() {
                         </div>
 
                         <h2>
-                            История пока пуста
+                            Дневник пока пуст
                         </h2>
 
                         <p>
@@ -1400,76 +1480,439 @@ function openHistory() {
                         </p>
 
                     </div>
+
                   `
         }
 
+
+        <div class="section-title">
+            Последние 7 дней
+        </div>
+
+
+        ${createLastSevenDays(history)}
+
     `;
 }
 
 
 // ========================================
-// TEXT
+// STATISTICS
 // ========================================
 
-function pluralizeText(
-    number,
-    one,
-    few,
-    many
+function getStatisticTasks(
+    currentTasks,
+    history,
+    currentMonth
 ) {
 
-    const n =
-        Math.abs(number) % 100;
+    const result = [];
 
-    const last =
-        n % 10;
+    const knownIds = new Set();
 
 
-    if (
-        n >= 11 &&
-        n <= 19
-    ) {
+    currentTasks.forEach(task => {
 
-        return many;
-    }
-
-
-    if (
-        last === 1
-    ) {
-
-        return one;
-    }
+        if (
+            task.statistics ===
+            "none"
+        ) {
+            return;
+        }
 
 
-    if (
-        last >= 2 &&
-        last <= 4
-    ) {
-
-        return few;
-    }
+        knownIds.add(task.id);
 
 
-    return many;
+        const count =
+            countTaskForMonth(
+                history,
+                currentMonth,
+                task.id
+            );
+
+
+        if (count > 0) {
+
+            result.push(task);
+
+        }
+
+    });
+
+
+    Object.keys(history)
+        .forEach(date => {
+
+            const tasks =
+                history[date]?.tasks || [];
+
+
+            tasks.forEach(task => {
+
+                if (
+                    knownIds.has(task.id)
+                ) {
+                    return;
+                }
+
+
+                if (
+                    task.statistics ===
+                    "none"
+                ) {
+                    return;
+                }
+
+
+                const count =
+                    countTaskForMonth(
+                        history,
+                        currentMonth,
+                        task.id
+                    );
+
+
+                if (count > 0) {
+
+                    result.push(task);
+
+                    knownIds.add(task.id);
+
+                }
+
+            });
+
+        });
+
+
+    return result;
 }
 
 
-function formatCompletedText(
-    count,
-    monthName
+// ========================================
+// STATISTIC CARD
+// ========================================
+
+function createStatisticCard(
+    task,
+    history,
+    currentMonth,
+    previousMonth
 ) {
+
+    const currentCount =
+        countTaskForMonth(
+            history,
+            currentMonth,
+            task.id
+        );
+
+
+    const previousCount =
+        countTaskForMonth(
+            history,
+            previousMonth,
+            task.id
+        );
+
+
+    const monthName =
+        getMonthPrepositional(
+            currentMonth
+        );
+
+
+    const previousMonthName =
+        getMonthPrepositional(
+            previousMonth
+        );
+
+
+    const target =
+        task.targetPerMonth ||
+        getMonthlyTarget(
+            history,
+            currentMonth,
+            task.id
+        );
+
+
+    const isMonthly =
+        task.statistics === "monthly";
+
+
+    const isSessions =
+        task.statistics === "sessions";
+
+
+    let progress = null;
+
+
+    if (
+        isMonthly &&
+        target
+    ) {
+
+        progress =
+            Math.min(
+                currentCount /
+                target *
+                100,
+                100
+            );
+
+    }
+
+
+    /*
+     * ВАЖНО:
+     * Большая цифра теперь сама является
+     * основным показателем.
+     *
+     * В подписи не повторяем эту цифру.
+     */
+
+    let caption = "";
+
+
+    if (isMonthly) {
+
+        caption =
+            `выполнено в ${monthName}`;
+
+    } else if (isSessions) {
+
+        caption =
+            `игровые сессии в ${monthName}`;
+
+    }
+
 
     return `
-        ${count}
-        ${pluralizeText(
-            count,
-            "выполнение",
-            "выполнения",
-            "выполнений"
-        )}
-        в ${monthName}
+
+        <div class="card statistic-card">
+
+            <div class="statistic-top">
+
+                <div class="statistic-icon">
+                    ${task.icon}
+                </div>
+
+
+                <div class="statistic-title">
+
+                    <h2>
+                        ${escapeHtml(
+                            task.name
+                        )}
+                    </h2>
+
+                    <span>
+                        ${escapeHtml(
+                            task.description
+                        )}
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="statistic-main">
+
+                <div class="statistic-number">
+                    ${currentCount}
+                </div>
+
+
+                <div class="statistic-caption">
+                    ${caption}
+                </div>
+
+            </div>
+
+
+            ${
+                isMonthly
+
+                    ? `
+
+                        <div class="statistic-goal">
+
+                            <div
+                                class="
+                                    statistic-goal-line
+                                "
+                            >
+
+                                <span>
+                                    Цель на месяц
+                                </span>
+
+                                <strong>
+                                    ${target}+
+                                </strong>
+
+                            </div>
+
+
+                            <div
+                                class="history-progress"
+                            >
+
+                                <div
+                                    class="
+                                        history-progress-fill
+                                        ${
+                                            currentCount >=
+                                            target
+                                                ? "goal-reached"
+                                                : ""
+                                        }
+                                    "
+                                    style="
+                                        width:
+                                        ${progress}%
+                                    "
+                                ></div>
+
+                            </div>
+
+
+                            ${
+                                currentCount >= target
+
+                                    ? `
+                                        <div
+                                            class="goal-message"
+                                        >
+                                            ✓ Цель достигнута
+                                        </div>
+                                      `
+
+                                    : ""
+                            }
+
+                        </div>
+
+                      `
+
+                    : ""
+
+            }
+
+
+            ${
+                previousCount > 0
+
+                    ? `
+
+                        <div class="previous-result">
+
+                            <div
+                                class="
+                                    previous-result-label
+                                "
+                            >
+                                Прошлый месяц
+                            </div>
+
+
+                            <div
+                                class="
+                                    previous-result-content
+                                "
+                            >
+
+                                <strong>
+                                    ${previousCount}
+                                </strong>
+
+
+                                <span>
+
+                                    ${
+                                        isMonthly
+                                            ? (
+                                                previousCount >=
+                                                (
+                                                    task.targetPerMonth ||
+                                                    getMonthlyTarget(
+                                                        history,
+                                                        previousMonth,
+                                                        task.id
+                                                    )
+                                                )
+                                                    ? "цель достигнута"
+                                                    : `выполнено в ${previousMonthName}`
+                                            )
+
+                                            : `игровые сессии в ${previousMonthName}`
+
+                                    }
+
+                                </span>
+
+                            </div>
+
+
+                        </div>
+
+                      `
+
+                    : ""
+
+            }
+
+        </div>
+
     `;
+}
+
+
+// ========================================
+// MONTH COUNT
+// ========================================
+
+function countTaskForMonth(
+    history,
+    month,
+    taskId
+) {
+
+    let count = 0;
+
+
+    Object.keys(history)
+        .forEach(date => {
+
+            if (
+                !date.startsWith(month)
+            ) {
+                return;
+            }
+
+
+            const tasks =
+                history[date]?.tasks || [];
+
+
+            const task =
+                tasks.find(
+                    item =>
+                        item.id === taskId
+                );
+
+
+            if (task?.done === true) {
+                count++;
+            }
+
+        });
+
+
+    return count;
 }
 
 
@@ -1488,31 +1931,26 @@ function getMonthlyTarget(
     ) {
 
         if (
-            date.startsWith(
-                month
-            )
+            !date.startsWith(month)
         ) {
-
-            const tasks =
-                history[date]?.tasks ||
-                [];
+            continue;
+        }
 
 
-            const task =
-                tasks.find(
-                    item =>
-                        item.id ===
-                        taskId
-                );
+        const tasks =
+            history[date]?.tasks || [];
 
 
-            if (
-                task?.targetPerMonth
-            ) {
+        const task =
+            tasks.find(
+                item =>
+                    item.id === taskId
+            );
 
-                return task.targetPerMonth;
 
-            }
+        if (task?.targetPerMonth) {
+
+            return task.targetPerMonth;
 
         }
 
@@ -1524,68 +1962,10 @@ function getMonthlyTarget(
 
 
 // ========================================
-// MONTH COUNT
-// ========================================
-
-function countTaskForMonth(
-    history,
-    month,
-    taskId
-) {
-
-    let count = 0;
-
-
-    Object.keys(history)
-        .forEach(
-            date => {
-
-                if (
-                    !date.startsWith(
-                        month
-                    )
-                ) {
-
-                    return;
-                }
-
-
-                const tasks =
-                    history[date]?.tasks ||
-                    [];
-
-
-                const task =
-                    tasks.find(
-                        item =>
-                            item.id ===
-                            taskId
-                    );
-
-
-                if (
-                    task?.done === true
-                ) {
-
-                    count++;
-
-                }
-
-            }
-        );
-
-
-    return count;
-}
-
-
-// ========================================
 // PREVIOUS MONTH
 // ========================================
 
-function getPreviousMonth(
-    monthKey
-) {
+function getPreviousMonth(monthKey) {
 
     const [
         year,
@@ -1610,10 +1990,7 @@ function getPreviousMonth(
 
         String(
             date.getMonth() + 1
-        ).padStart(
-            2,
-            "0"
-        )
+        ).padStart(2, "0")
 
     ].join("-");
 }
@@ -1672,12 +2049,9 @@ function getMonthPrepositional(
 // LAST 7 DAYS
 // ========================================
 
-function getLastDays(
-    history,
-    numberOfDays
-) {
+function createLastSevenDays(history) {
 
-    const result = [];
+    const days = [];
 
     const today =
         new Date();
@@ -1685,14 +2059,12 @@ function getLastDays(
 
     for (
         let i = 0;
-        i < numberOfDays;
+        i < 7;
         i++
     ) {
 
         const date =
-            new Date(
-                today
-            );
+            new Date(today);
 
 
         date.setDate(
@@ -1701,35 +2073,46 @@ function getLastDays(
 
 
         const key =
-            formatDateKey(
-                date
-            );
+            formatDateKey(date);
 
 
-        if (
-            history[key]
-        ) {
+        if (history[key]) {
 
-            result.push({
-
-                date: key,
-
-                data:
+            days.push(
+                createHistoryDay(
+                    key,
                     history[key]
-
-            });
+                )
+            );
 
         }
 
     }
 
 
-    return result;
+    if (!days.length) {
+
+        return `
+
+            <div class="card history-empty">
+
+                <p>
+                    Отмеченные задачи появятся здесь.
+                </p>
+
+            </div>
+
+        `;
+
+    }
+
+
+    return days.join("");
 }
 
 
 // ========================================
-// HISTORY DAY UI
+// HISTORY DAY
 // ========================================
 
 function createHistoryDay(
@@ -1773,14 +2156,10 @@ function createHistoryDay(
 
                     <div class="history-count">
 
-                        ${
-                            completed
-                        }
+                        ${completed}
                         из
-                        ${
-                            total
-                        }
-                        выполнено
+                        ${total}
+                        задач выполнено
 
                     </div>
 
@@ -1850,9 +2229,7 @@ function createHistoryDay(
 // DATE FORMAT
 // ========================================
 
-function formatDate(
-    dateString
-) {
+function formatDate(dateString) {
 
     const [
         year,
@@ -1884,14 +2261,10 @@ function formatDate(
 // SECURITY
 // ========================================
 
-function escapeHtml(
-    value
-) {
+function escapeHtml(value) {
 
     const div =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
 
     div.textContent =

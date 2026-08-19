@@ -6,20 +6,14 @@
 :root {
 
     --background: #f7f5f0;
-
     --surface: #ffffff;
-
     --text: #171717;
-
     --muted: #777777;
-
     --placeholder: #777777;
-
     --line: #eeeeee;
-
     --soft: #f1efea;
-
     --border: #dcd9d2;
+
 }
 
 
@@ -48,6 +42,7 @@ body {
 
     -webkit-font-smoothing:
         antialiased;
+
 }
 
 
@@ -68,7 +63,9 @@ button {
 }
 
 
-/* APP */
+/* ========================================
+   APP
+   ======================================== */
 
 .app {
 
@@ -88,7 +85,9 @@ button {
 }
 
 
-/* HEADER */
+/* ========================================
+   HEADER
+   ======================================== */
 
 .header {
 
@@ -107,9 +106,11 @@ button {
 
 .logo {
 
-    font-size: 19px;
+    font-size:
+        19px;
 
-    font-weight: 700;
+    font-weight:
+        700;
 
     letter-spacing:
         -0.5px;
@@ -119,29 +120,39 @@ button {
 
 .cat-icon {
 
-    width: 42px;
+    width:
+        42px;
 
-    height: 42px;
+    height:
+        42px;
 
-    display: flex;
+    display:
+        flex;
 
-    align-items: center;
+    align-items:
+        center;
 
-    justify-content: center;
+    justify-content:
+        center;
 
-    border-radius: 50%;
+    border-radius:
+        50%;
 
     background:
         var(--text);
 
-    color: white;
+    color:
+        white;
 
-    font-size: 20px;
+    font-size:
+        20px;
 
 }
 
 
-/* WELCOME */
+/* ========================================
+   WELCOME
+   ======================================== */
 
 .welcome {
 
@@ -156,9 +167,11 @@ button {
     margin:
         0 0 10px;
 
-    font-size: 34px;
+    font-size:
+        34px;
 
-    line-height: 1.05;
+    line-height:
+        1.05;
 
     letter-spacing:
         -1.5px;
@@ -168,23 +181,38 @@ button {
 
 .welcome p {
 
-    width: 100%;
+    width:
+        100%;
 
-    max-width: 410px;
+    max-width:
+        410px;
 
-    margin: 0;
+    margin:
+        0;
 
     color:
         var(--muted);
 
-    font-size: 15.5px;
+    font-size:
+        15.5px;
 
-    line-height: 1.5;
+    line-height:
+        1.5;
 
 }
 
 
-/* CARD */
+.welcome-subtitle {
+
+    display:
+        block;
+
+}
+
+
+/* ========================================
+   CARD
+   ======================================== */
 
 .card {
 
@@ -212,7 +240,9 @@ button {
 }
 
 
-/* EMPTY */
+/* ========================================
+   EMPTY
+   ======================================== */
 
 .empty {
 
@@ -269,11 +299,14 @@ button {
 }
 
 
-/* CAT */
+/* ========================================
+   CAT
+   ======================================== */
 
 .cat-card {
 
-    display: flex;
+    display:
+        flex;
 
     align-items:
         center;
@@ -292,9 +325,11 @@ button {
     height:
         64px;
 
-    flex-shrink: 0;
+    flex-shrink:
+        0;
 
-    display: flex;
+    display:
+        flex;
 
     align-items:
         center;
@@ -342,7 +377,9 @@ button {
 }
 
 
-/* SECTION */
+/* ========================================
+   SECTION
+   ======================================== */
 
 .section-title {
 
@@ -360,11 +397,14 @@ button {
 }
 
 
-/* TASKS */
+/* ========================================
+   TASKS
+   ======================================== */
 
 .task {
 
-    display: flex;
+    display:
+        flex;
 
     align-items:
         center;
@@ -533,7 +573,9 @@ button {
 }
 
 
-/* BUTTON */
+/* ========================================
+   BUTTON
+   ======================================== */
 
 .button {
 
@@ -586,7 +628,9 @@ button {
 }
 
 
-/* MODAL */
+/* ========================================
+   MODAL
+   ======================================== */
 
 .modal {
 
@@ -652,7 +696,9 @@ button {
 }
 
 
-/* MODAL HEADER */
+/* ========================================
+   MODAL HEADER
+   ======================================== */
 
 .modal-header {
 
@@ -711,7 +757,9 @@ button {
 }
 
 
-/* FORM */
+/* ========================================
+   FORM
+   ======================================== */
 
 .form {
 
@@ -765,6 +813,9 @@ button {
 
     height:
         52px;
+
+    min-width:
+        0;
 
     padding:
         0
@@ -820,7 +871,42 @@ button {
 }
 
 
-/* TEXT BUTTON */
+input[type="date"] {
+
+    appearance:
+        none;
+
+    -webkit-appearance:
+        none;
+
+    width:
+        100%;
+
+    min-width:
+        0;
+
+}
+
+
+input[type="date"]::-webkit-date-and-time-value {
+
+    text-align:
+        left;
+
+}
+
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+
+    margin-left:
+        auto;
+
+}
+
+
+/* ========================================
+   TEXT BUTTON
+   ======================================== */
 
 .text-button {
 
@@ -854,7 +940,9 @@ button {
 }
 
 
-/* AGE */
+/* ========================================
+   AGE
+   ======================================== */
 
 .age-field {
 
@@ -892,7 +980,10 @@ button {
 .age-input {
 
     flex:
-        1;
+        1 1 auto;
+
+    min-width:
+        0;
 
 }
 
@@ -902,13 +993,18 @@ button {
     flex:
         0 0 125px;
 
+    min-width:
+        0;
+
     cursor:
         pointer;
 
 }
 
 
-/* ACTIONS */
+/* ========================================
+   ACTIONS
+   ======================================== */
 
 .form-actions {
 
@@ -921,7 +1017,680 @@ button {
 }
 
 
-/* DESKTOP */
+/* ========================================
+   HISTORY HEADER
+   ======================================== */
+
+.history-header {
+
+    margin-bottom:
+        24px;
+
+}
+
+
+.back-button {
+
+    border:
+        none;
+
+    background:
+        transparent;
+
+    padding:
+        0;
+
+    margin-bottom:
+        18px;
+
+    font-family:
+        inherit;
+
+    font-size:
+        15px;
+
+    color:
+        #777;
+
+    cursor:
+        pointer;
+
+}
+
+
+.history-header h1 {
+
+    margin:
+        0;
+
+    font-size:
+        34px;
+
+    line-height:
+        1.05;
+
+    letter-spacing:
+        -1.5px;
+
+}
+
+
+/* ========================================
+   STATISTIC CARD
+   ======================================== */
+
+.statistic-card {
+
+    padding:
+        20px;
+
+}
+
+
+.statistic-top {
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    gap:
+        13px;
+
+}
+
+
+.statistic-icon {
+
+    width:
+        44px;
+
+    height:
+        44px;
+
+    flex-shrink:
+        0;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    border-radius:
+        14px;
+
+    background:
+        var(--soft);
+
+    font-size:
+        21px;
+
+}
+
+
+.statistic-title {
+
+    min-width:
+        0;
+
+}
+
+
+.statistic-title h2 {
+
+    margin:
+        0 0 3px;
+
+    font-size:
+        16px;
+
+    line-height:
+        1.25;
+
+}
+
+
+.statistic-title span {
+
+    display:
+        block;
+
+    color:
+        #888888;
+
+    font-size:
+        13px;
+
+    line-height:
+        1.35;
+
+}
+
+
+.statistic-main {
+
+    margin-top:
+        22px;
+
+}
+
+
+.statistic-number {
+
+    font-size:
+        42px;
+
+    line-height:
+        1;
+
+    font-weight:
+        600;
+
+    letter-spacing:
+        -1.5px;
+
+}
+
+
+.statistic-caption {
+
+    margin-top:
+        7px;
+
+    color:
+        #777777;
+
+    font-size:
+        14px;
+
+    line-height:
+        1.4;
+
+}
+
+
+/* ========================================
+   GOAL
+   ======================================== */
+
+.statistic-goal {
+
+    margin-top:
+        20px;
+
+    padding-top:
+        17px;
+
+    border-top:
+        1px solid
+        var(--line);
+
+}
+
+
+.statistic-goal-line {
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        space-between;
+
+    gap:
+        12px;
+
+    color:
+        #777777;
+
+    font-size:
+        13px;
+
+}
+
+
+.statistic-goal-line strong {
+
+    color:
+        #222222;
+
+    font-size:
+        13px;
+
+    font-weight:
+        600;
+
+}
+
+
+.history-progress {
+
+    width:
+        100%;
+
+    height:
+        6px;
+
+    margin-top:
+        12px;
+
+    background:
+        #eeeeee;
+
+    border-radius:
+        10px;
+
+    overflow:
+        hidden;
+
+}
+
+
+.history-progress-fill {
+
+    height:
+        100%;
+
+    background:
+        #222222;
+
+    border-radius:
+        10px;
+
+    transition:
+        width
+        0.3s
+        ease;
+
+}
+
+
+.history-progress-fill.goal-reached {
+
+    background:
+        #222222;
+
+}
+
+
+.goal-message {
+
+    margin-top:
+        9px;
+
+    color:
+        #555555;
+
+    font-size:
+        13px;
+
+    font-weight:
+        500;
+
+}
+
+
+/* ========================================
+   PREVIOUS MONTH
+   ======================================== */
+
+.previous-result {
+
+    margin-top:
+        20px;
+
+    padding-top:
+        17px;
+
+    border-top:
+        1px solid
+        var(--line);
+
+}
+
+
+.previous-result-label {
+
+    margin-bottom:
+        8px;
+
+    color:
+        #999999;
+
+    font-size:
+        12px;
+
+    text-transform:
+        uppercase;
+
+    letter-spacing:
+        0.4px;
+
+}
+
+
+.previous-result-content {
+
+    display:
+        flex;
+
+    align-items:
+        baseline;
+
+    gap:
+        8px;
+
+}
+
+
+.previous-result-content strong {
+
+    font-size:
+        25px;
+
+    line-height:
+        1;
+
+    font-weight:
+        600;
+
+}
+
+
+.previous-result-content span {
+
+    color:
+        #777777;
+
+    font-size:
+        13px;
+
+}
+
+
+.previous-success {
+
+    margin-top:
+        8px;
+
+    color:
+        #555555;
+
+    font-size:
+        13px;
+
+    font-weight:
+        500;
+
+}
+
+
+/* ========================================
+   HISTORY DAYS
+   ======================================== */
+
+.history-day {
+
+    margin-bottom:
+        14px;
+
+}
+
+
+.history-day-top {
+
+    display:
+        flex;
+
+    justify-content:
+        space-between;
+
+    align-items:
+        flex-start;
+
+    gap:
+        20px;
+
+}
+
+
+.history-date {
+
+    margin-bottom:
+        5px;
+
+    font-size:
+        17px;
+
+    font-weight:
+        500;
+
+}
+
+
+.history-count {
+
+    color:
+        #888888;
+
+    font-size:
+        13px;
+
+}
+
+
+.history-task-list {
+
+    margin-top:
+        18px;
+
+    padding-top:
+        14px;
+
+    border-top:
+        1px solid
+        var(--line);
+
+}
+
+
+.history-task {
+
+    display:
+        grid;
+
+    grid-template-columns:
+        24px
+        minmax(0, 1fr)
+        20px;
+
+    align-items:
+        center;
+
+    gap:
+        8px;
+
+    min-height:
+        34px;
+
+    color:
+        #999999;
+
+    font-size:
+        14px;
+
+}
+
+
+.history-task-done {
+
+    color:
+        #222222;
+
+}
+
+
+.history-check {
+
+    text-align:
+        right;
+
+    font-size:
+        16px;
+
+    font-weight:
+        500;
+
+}
+
+
+/* ========================================
+   EMPTY HISTORY
+   ======================================== */
+
+.history-empty {
+
+    text-align:
+        center;
+
+}
+
+
+.history-empty p {
+
+    color:
+        #777777;
+
+    line-height:
+        1.5;
+
+}
+
+
+/* ========================================
+   MOBILE
+   ======================================== */
+
+@media (max-width: 480px) {
+
+    .app {
+
+        padding:
+            20px
+            15px
+            32px;
+
+    }
+
+
+    .welcome h1 {
+
+        font-size:
+            32px;
+
+    }
+
+
+    .welcome-subtitle {
+
+        font-size:
+            15px;
+
+    }
+
+
+    .modal-content {
+
+        padding:
+            22px
+            16px
+            28px;
+
+    }
+
+
+    .age-row {
+
+        gap:
+            8px;
+
+    }
+
+
+    .age-unit {
+
+        flex:
+            0 0 112px;
+
+    }
+
+
+    input[type="date"] {
+
+        font-size:
+            16px;
+
+        padding-left:
+            13px;
+
+        padding-right:
+            10px;
+
+    }
+
+
+    .statistic-number {
+
+        font-size:
+            38px;
+
+    }
+
+
+    .statistic-card {
+
+        padding:
+            18px;
+
+    }
+
+
+    .history-header h1 {
+
+        font-size:
+            32px;
+
+    }
+
+
+    .history-day-top {
+
+        gap:
+            12px;
+
+    }
+
+
+    .history-date {
+
+        font-size:
+            16px;
+
+    }
+
+}
+
+
+/* ========================================
+   DESKTOP
+   ======================================== */
 
 @media (min-width: 600px) {
 
@@ -942,202 +1711,135 @@ button {
 
 }
 /* ========================================
-   ИСТОРИЯ
+   STATISTIC CARD — POLISH
    ======================================== */
 
-.history-header {
-    margin-bottom: 24px;
-}
-
-.back-button {
-    border: none;
-    background: transparent;
-    padding: 0;
-    margin-bottom: 18px;
-
-    font-family: inherit;
-    font-size: 15px;
-    color: #777;
-
-    cursor: pointer;
-}
-
-.history-header h1 {
-    margin: 0;
-}
-
-
-/* ========================================
-   СВОДКА
-   ======================================== */
-
-.history-summary {
-    margin-bottom: 28px;
-}
-
-.history-summary-label {
-    font-size: 14px;
-    color: #777;
-    margin-bottom: 8px;
-}
-
-.history-summary-number {
-    font-size: 42px;
-    line-height: 1;
-    font-weight: 600;
-    margin-bottom: 8px;
-}
-
-.history-summary-caption {
-    font-size: 14px;
-    line-height: 1.45;
-    color: #777;
-}
-
-.history-progress {
-    width: 100%;
-    height: 6px;
-
-    margin-top: 18px;
-
-    background: #eeeeee;
-    border-radius: 10px;
-
+.statistic-card {
     overflow: hidden;
 }
 
-.history-progress-fill {
-    height: 100%;
 
-    background: #222;
-    border-radius: 10px;
+.statistic-main {
+    padding-bottom: 2px;
+}
 
-    transition: width 0.3s ease;
+
+.statistic-number {
+    letter-spacing: -1.8px;
+}
+
+
+.statistic-caption {
+    max-width: 280px;
 }
 
 
 /* ========================================
-   ДЕНЬ
+   GOAL
    ======================================== */
 
-.history-day {
-    margin-bottom: 14px;
+.statistic-goal {
+    margin-top: 21px;
+    padding-top: 17px;
+
+    border-top:
+        1px solid
+        var(--line);
 }
 
-.history-day-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
 
-    gap: 20px;
+.statistic-goal-line {
+    min-height: 20px;
 }
 
-.history-date {
-    font-size: 17px;
+
+.statistic-goal-line strong {
+    padding: 5px 9px;
+
+    border-radius: 9px;
+
+    background: var(--soft);
+
+    color: var(--text);
+
+    white-space: nowrap;
+}
+
+
+.goal-message {
+    display: inline-flex;
+
+    margin-top: 10px;
+    padding: 5px 9px;
+
+    border-radius: 9px;
+
+    background: var(--soft);
+
+    color: #555;
+
+    font-size: 12px;
     font-weight: 500;
-    margin-bottom: 5px;
-}
-
-.history-count {
-    font-size: 13px;
-    color: #888;
-}
-
-.history-percent {
-    font-size: 15px;
-    color: #777;
 }
 
 
 /* ========================================
-   ЗАДАЧИ В ИСТОРИИ
+   PREVIOUS MONTH
    ======================================== */
 
-.history-task-list {
-    margin-top: 18px;
+.previous-result {
+    margin-top: 20px;
+    padding-top: 17px;
 
-    padding-top: 14px;
-
-    border-top: 1px solid #eeeeee;
+    border-top:
+        1px solid
+        var(--line);
 }
 
-.history-task {
-    display: grid;
 
-    grid-template-columns:
-        24px
-        minmax(0, 1fr)
-        20px;
-
-    align-items: center;
-
-    gap: 8px;
-
-    min-height: 34px;
-
-    font-size: 14px;
+.previous-result-label {
+    margin-bottom: 9px;
 
     color: #999;
+
+    font-size: 11px;
+    font-weight: 600;
+
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
 }
 
-.history-task-done {
-    color: #222;
+
+.previous-result-content {
+    min-height: 28px;
 }
 
-.history-check {
-    text-align: right;
 
-    font-size: 16px;
+.previous-result-content strong {
+    font-size: 27px;
+    letter-spacing: -0.8px;
+}
+
+
+.previous-result-content span {
+    line-height: 1.35;
+}
+
+
+.previous-success {
+    display: inline-flex;
+
+    margin-top: 9px;
+    padding: 5px 9px;
+
+    border-radius: 9px;
+
+    background: var(--soft);
+
+    color: #555;
+
+    font-size: 12px;
     font-weight: 500;
-}
-
-
-/* ========================================
-   ПРОГРЕСС СЕГОДНЯ
-   ======================================== */
-
-.today-progress {
-    margin-top: 18px;
-
-    padding-top: 15px;
-
-    border-top: 1px solid #eeeeee;
-
-    font-size: 13px;
-
-    color: #888;
-}
-
-.today-progress strong {
-    color: #222;
-}
-
-
-/* ========================================
-   ПУСТАЯ ИСТОРИЯ
-   ======================================== */
-
-.history-empty {
-    text-align: center;
-}
-
-.history-empty p {
-    color: #777;
-    line-height: 1.5;
-}
-
-
-/* ========================================
-   ВТОРИЧНАЯ КНОПКА
-   ======================================== */
-
-.button-secondary {
-    margin-top: 10px;
-
-    background: transparent;
-    color: #222;
-
-    border: 1px solid #dddddd;
 }
 
 
@@ -1147,92 +1849,161 @@ button {
 
 @media (max-width: 480px) {
 
-    .history-summary-number {
-        font-size: 36px;
+    .statistic-card {
+        padding: 18px;
     }
 
-    .history-day-top {
-        gap: 12px;
+
+    .statistic-number {
+        font-size: 38px;
     }
 
-    .history-date {
-        font-size: 16px;
+
+    .statistic-goal-line {
+        align-items: flex-start;
+    }
+
+
+    .statistic-goal-line strong {
+        flex-shrink: 0;
+    }
+
+
+    .previous-result-content {
+        align-items: baseline;
     }
 
 }
 /* ========================================
-   СТАТИСТИКА ИСТОРИИ
+   КОШКИ — ПЕРЕКЛЮЧАТЕЛЬ
+   MVP 0.8.1
    ======================================== */
 
-.history-stats {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1px;
-
-    padding: 0;
-
-    overflow: hidden;
+.cat-switcher {
+    margin-bottom: 14px;
 }
 
-.history-stat {
-    padding: 20px;
-    background: #fff;
+.cat-switcher-list {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 2px 0 10px;
+
+    scrollbar-width: none;
 }
 
-.history-stat + .history-stat {
-    border-left: 1px solid #eeeeee;
+.cat-switcher-list::-webkit-scrollbar {
+    display: none;
 }
 
-.history-stat strong {
-    display: block;
+.cat-switcher-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
 
-    font-size: 28px;
-    line-height: 1;
+    flex-shrink: 0;
 
-    margin-bottom: 7px;
+    min-height: 38px;
+    padding: 6px 12px 6px 7px;
+
+    border: 1px solid transparent;
+    border-radius: 19px;
+
+    background: #ffffff;
+    color: #666666;
+
+    font-size: 13px;
+    font-weight: 500;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 2px 8px
+        rgba(0, 0, 0, 0.035);
 }
 
-.history-stat span {
-    display: block;
-
-    font-size: 12px;
-    line-height: 1.4;
-
-    color: #888;
+.cat-switcher-item.active {
+    border-color: #dcd9d2;
+    color: #171717;
 }
+
+.cat-switcher-avatar {
+    width: 26px;
+    height: 26px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background: #f1efea;
+
+    font-size: 15px;
+}
+
+.add-cat-button {
+    display: inline-flex;
+    align-items: center;
+
+    margin-top: 2px;
+    padding: 5px 2px;
+
+    border: none;
+    background: transparent;
+
+    color: #888888;
+
+    font-family: inherit;
+    font-size: 13px;
+
+    cursor: pointer;
+}
+
+.add-cat-button:active {
+    color: #222222;
+}
+
+
+/* ========================================
+   ЗАГОЛОВОК ПЕРВОГО ЭКРАНА
+   ======================================== */
+
+.welcome-subtitle {
+    line-height: 1.5;
+}
+
+
+/* ========================================
+   СТАТИСТИКА ДНЕВНИКА
+   ======================================== */
+
+.statistic-caption {
+    color: #888888;
+}
+
+.statistic-goal-line strong {
+    font-size: 14px;
+}
+
+
+/* ========================================
+   MOBILE
+   ======================================== */
 
 @media (max-width: 480px) {
 
-    .history-stat {
-        padding: 17px;
+    .cat-switcher {
+        margin-bottom: 14px;
     }
 
-    .history-stat strong {
-        font-size: 24px;
+    .cat-switcher-item {
+        min-height: 36px;
+        padding-right: 11px;
     }
 
-}
-/* ========================================
-   ЦЕЛЬ И ПРОШЛЫЙ МЕСЯЦ
-   ======================================== */
+    .add-cat-button {
+        margin-top: 1px;
+    }
 
-.history-target {
-    margin-top: 12px;
-
-    font-size: 13px;
-    color: #777;
-}
-
-.history-target-success {
-    color: #222;
-    font-weight: 500;
-}
-
-.history-previous {
-    margin-top: 14px;
-}
-
-.history-summary-number.small {
-    font-size: 32px;
-    margin-bottom: 6px;
 }
