@@ -11,15 +11,38 @@
     >
 
     <meta
-        name="description"
-        content="Жизнь с кошкой — спокойный уход за кошкой в одном месте."
+        name="theme-color"
+        content="#f7f5f0"
     >
 
     <title>Жизнь с кошкой</title>
 
+
+    <!-- CSS -->
+
     <link
         rel="stylesheet"
-        href="style.css"
+        href="css/base.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="css/layout.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="css/components.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="css/forms.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="css/diary.css"
     >
 
 </head>
@@ -42,26 +65,27 @@
         </header>
 
 
-        <section id="content"></section>
+        <div id="content"></div>
 
     </main>
 
 
-    <!-- МОДАЛЬНОЕ ОКНО ПРОФИЛЯ -->
+    <!-- ========================================
+         MODAL
+         ======================================== -->
 
     <div
-        class="modal"
         id="modal"
+        class="modal"
         aria-hidden="true"
     >
 
         <div class="modal-content">
 
-
             <div class="modal-header">
 
                 <h2>
-                    Ваша кошка
+                    Профиль кошки
                 </h2>
 
                 <button
@@ -76,16 +100,18 @@
             </div>
 
 
-            <div class="form">
+            <form
+                class="form"
+                onsubmit="event.preventDefault(); saveCat();"
+            >
 
-
-                <!-- ИМЯ -->
+                <!-- NAME -->
 
                 <div class="form-field">
 
                     <label
-                        for="catName"
                         class="form-label"
+                        for="catName"
                     >
                         Имя кошки
                     </label>
@@ -101,16 +127,16 @@
                 </div>
 
 
-                <!-- ДАТА РОЖДЕНИЯ -->
+                <!-- BIRTH DATE -->
 
                 <div
-                    class="form-field"
                     id="birthDateField"
+                    class="form-field"
                 >
 
                     <label
-                        for="catBirthDate"
                         class="form-label"
+                        for="catBirthDate"
                     >
                         Дата рождения
                     </label>
@@ -126,26 +152,23 @@
                         class="text-button"
                         onclick="showAgeInput()"
                     >
-                        Дата рождения неизвестна
+                        Указать возраст вместо даты
                     </button>
 
                 </div>
 
 
-                <!-- ВОЗРАСТ -->
+                <!-- AGE -->
 
                 <div
-                    class="age-field"
                     id="ageField"
+                    class="age-field"
                     hidden
                 >
 
-                    <label
-                        class="form-label"
-                    >
+                    <label class="form-label">
                         Возраст
                     </label>
-
 
                     <div class="age-row">
 
@@ -154,10 +177,9 @@
                             class="input age-input"
                             type="number"
                             min="0"
-                            max="30"
-                            placeholder="4"
+                            max="40"
+                            placeholder="Возраст"
                         >
-
 
                         <select
                             id="catAgeUnit"
@@ -165,11 +187,11 @@
                         >
 
                             <option value="years">
-                                года
+                                лет
                             </option>
 
                             <option value="months">
-                                месяца
+                                месяцев
                             </option>
 
                         </select>
@@ -182,24 +204,30 @@
                         class="text-button"
                         onclick="showBirthDateInput()"
                     >
-                        Указать дату рождения
+                        Указать дату рождения вместо возраста
                     </button>
 
                 </div>
 
 
-                <!-- КНОПКИ -->
+                <!-- ACTIONS -->
 
                 <div class="form-actions">
 
                     <button
-                        type="button"
+                        type="submit"
                         class="button"
-                        onclick="saveCat()"
                     >
                         Сохранить
-                    </button>
-
+                    </button> <button
+    type="button"
+    id="deleteProfileButton"
+    class="delete-profile-button"
+    onclick="deleteCurrentCat()"
+    hidden
+>
+    Удалить профиль кошки
+</button>
 
                     <button
                         type="button"
@@ -211,15 +239,20 @@
 
                 </div>
 
-
-            </div>
+            </form>
 
         </div>
 
     </div>
 
 
-    <script src="app.js"></script>
+    <!-- JS -->
+
+    <script src="js/utils.js"></script>
+    <script src="js/cats.js"></script>
+    <script src="js/tasks.js"></script>
+    <script src="js/diary.js"></script>
+    <script src="js/app.js"></script>
 
 </body>
 
