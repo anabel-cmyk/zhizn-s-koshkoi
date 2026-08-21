@@ -118,10 +118,24 @@ function ensureCatTodayData(
         getTodayKey();
 
 
-    if (
-        !storage[catId] ||
+    if (!storage[catId]) {
+
+        storage[catId] = {
+            date: today,
+            tasks: getDefaultTasks()
+        };
+
+    } else if (
         storage[catId].date !== today
     ) {
+
+        // Не теряем предыдущий день при переходе
+        // на новый день из обработчика общей задачи.
+        saveTasksToHistory(
+            catId,
+            storage[catId].date,
+            storage[catId].tasks
+        );
 
         storage[catId] = {
             date: today,
@@ -145,10 +159,6 @@ function ensureCatTodayData(
 // ========================================
 
 function createTask(task) {
-
-    const shared =
-        getTaskSharedState(task.id);
-
 
     return `
         <div class="task">
@@ -186,12 +196,6 @@ function createTask(task) {
                 ></div>
 
             </div>
-
-            ${
-                shared
-                    ? `<div class="task-shared-label">Общая для всех кошек</div>`
-                    : ""
-            }
 
         </div>
     `;
@@ -402,8 +406,7 @@ function setTaskShared(
 
     // При включении общей задачи используем состояние
     // активной кошки как начальное общее состояние.
-    // Существующая история каждой кошки при этом
-    // остаётся отдельной записью.
+    // История каждой кошки остаётся отдельной записью.
     if (isShared) {
 
         const activeData =
@@ -449,8 +452,6 @@ function setTaskShared(
 
     saveTasksStorage(storage);
 
-
-    // Закрываем окно и сразу перерисовываем экран.
     closeTaskSettings();
     renderApp();
 }
