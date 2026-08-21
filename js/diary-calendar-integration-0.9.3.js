@@ -33,17 +33,30 @@
         if (!content || mode !== "progress") return;
         const header = content.querySelector(".history-header");
         if (!header) return;
-        let tabs = content.querySelector(".diary-mode-switcher");
-        const catSwitcher = content.querySelector(".diary-cat-switcher");
-        if (!tabs) {
-            tabs = document.createElement("div");
-            tabs.innerHTML = switcher();
-            tabs = tabs.firstElementChild;
-            if (catSwitcher) catSwitcher.insertAdjacentElement("afterend", tabs);
-            else header.insertAdjacentElement("afterend", tabs);
-        } else if (catSwitcher && tabs.previousElementSibling !== catSwitcher) {
-            catSwitcher.insertAdjacentElement("afterend", tabs);
+
+        // На Прогрессе выбор кошки ВСЕГДА сразу под заголовком Дневника,
+        // а переключатель подразделов — сразу под выбором кошки.
+        const catSwitchers = [...content.querySelectorAll(".diary-cat-switcher")];
+        const catSwitcher = catSwitchers[0] || null;
+        catSwitchers.slice(1).forEach(el => el.remove());
+
+        if (catSwitcher) {
+            header.insertAdjacentElement("afterend", catSwitcher);
         }
+
+        let tabs = content.querySelector(".diary-mode-switcher");
+        if (!tabs) {
+            const holder = document.createElement("div");
+            holder.innerHTML = switcher();
+            tabs = holder.firstElementChild;
+        } else {
+            tabs.outerHTML = switcher();
+            tabs = content.querySelector(".diary-mode-switcher");
+        }
+
+        const freshCatSwitcher = content.querySelector(".diary-cat-switcher");
+        if (freshCatSwitcher) freshCatSwitcher.insertAdjacentElement("afterend", tabs);
+        else header.insertAdjacentElement("afterend", tabs);
     }
 
     function healthCalendar(cat) {
@@ -56,21 +69,15 @@
         const days = new Date(year, month, 0).getDate();
         const offset = (first.getDay() + 6) % 7;
         const cells = [];
-
         for (let i = 0; i < offset; i++) cells.push(`<div class="diary-health-day empty"></div>`);
         for (let d = 1; d <= days; d++) {
             const date = `${key}-${String(d).padStart(2, "0")}`;
             const dayEvents = events.filter(e => e.date === date || e.nextDate === date);
-            const emojis = [...new Set(dayEvents.map(e => (e.emoji || eventTypes[e.type]?.[0] || "🩺")))];
+            const emojis = [...new Set(dayEvents.map(e => e.emoji || eventTypes[e.type]?.[0] || "🩺"))];
             cells.push(`<button type="button" class="diary-health-day ${date === getTodayKey() ? "today" : ""} ${dayEvents.length ? "has-events" : ""}" onclick="window.openDiaryHealthDate('${date}')"><span>${d}</span>${emojis.length ? `<small>${emojis.join("")}</small>` : ""}</button>`);
         }
-
         const monthName = new Intl.DateTimeFormat("ru-RU", { month: "long", year: "numeric" }).format(first);
-        return `<div class="card diary-health-calendar">
-            <div class="diary-health-calendar-header"><button type="button" onclick="window.shiftDiaryHealthMonth(-1)">‹</button><strong>${escapeHtml(monthName)}</strong><button type="button" onclick="window.shiftDiaryHealthMonth(1)">›</button></div>
-            <div class="diary-health-weekdays"><span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Вс</span></div>
-            <div class="diary-health-grid">${cells.join("")}</div>
-        </div><div id="diaryHealthDateEvents"></div>`;
+        return `<div class="card diary-health-calendar"><div class="diary-health-calendar-header"><button type="button" onclick="window.shiftDiaryHealthMonth(-1)">‹</button><strong>${escapeHtml(monthName)}</strong><button type="button" onclick="window.shiftDiaryHealthMonth(1)">›</button></div><div class="diary-health-weekdays"><span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Вс</span></div><div class="diary-health-grid">${cells.join("")}</div></div><div id="diaryHealthDateEvents"></div>`;
     }
 
     function renderCalendar() {
@@ -121,15 +128,7 @@
         modal.id = "diaryHealthEventModal";
         modal.className = "health-event-modal active";
         const emoji = existing?.emoji || eventTypes[existing?.type]?.[0] || "💉";
-        modal.innerHTML = `<div class="health-event-overlay" onclick="this.parentElement.remove()"></div><div class="health-event-dialog"><button class="health-event-close" onclick="this.closest('.health-event-modal').remove()">×</button><h2>${existing ? "Медицинское событие" : "Новое событие"}</h2>
-            <div class="form-field"><label class="form-label">Тип</label><select id="diaryHealthType" class="input">${Object.entries(eventTypes).map(([value,[icon,label]]) => `<option value="${value}" ${existing?.type === value ? "selected" : ""}>${icon} ${label}</option>`).join("")}</select></div>
-            <div class="form-field"><label class="form-label">Эмодзи</label><select id="diaryHealthEmoji" class="input"><option value="💉" ${emoji==="💉"?"selected":""}>💉</option><option value="🪱" ${emoji==="🪱"?"selected":""}>🪱</option><option value="🦟" ${emoji==="🦟"?"selected":""}>🦟</option><option value="🦷" ${emoji==="🦷"?"selected":""}>🦷</option><option value="💊" ${emoji==="💊"?"selected":""}>💊</option><option value="🩺" ${emoji==="🩺"?"selected":""}>🩺</option><option value="❤️" ${emoji==="❤️"?"selected":""}>❤️</option><option value="⭐" ${emoji==="⭐"?"selected":""}>⭐</option></select></div>
-            <div class="form-field"><label class="form-label">Дата события</label><input id="diaryHealthDate" class="input" type="date" required value="${existing?.date || ""}"></div>
-            <div class="form-field"><label class="form-label">Следующая дата</label><input id="diaryHealthNextDate" class="input" type="date" value="${existing?.nextDate || ""}"></div>
-            <div class="form-field"><label class="form-label">Напомнить заранее</label><select id="diaryHealthReminder" class="input">${[1,3,7,14,30].map(days => `<option value="${days}" ${Number(existing?.reminderDays || 14)===days?"selected":""}>За ${days} ${days===1?"день":"дней"}</option>`).join("")}</select></div>
-            <div class="form-field"><label class="form-label">Комментарий</label><input id="diaryHealthNote" class="input" type="text" value="${escapeHtml(existing?.note || "")}"></div>
-            <button type="button" class="button" onclick="window.saveDiaryHealthEvent('${eventId}')">Сохранить</button>${existing ? `<button type="button" class="button button-secondary" onclick="window.deleteDiaryHealthEvent('${eventId}')">Удалить</button>` : ""}
-        </div>`;
+        modal.innerHTML = `<div class="health-event-overlay" onclick="this.parentElement.remove()"></div><div class="health-event-dialog"><button class="health-event-close" onclick="this.closest('.health-event-modal').remove()">×</button><h2>${existing ? "Медицинское событие" : "Новое событие"}</h2><div class="form-field"><label class="form-label">Тип</label><select id="diaryHealthType" class="input">${Object.entries(eventTypes).map(([value,[icon,label]]) => `<option value="${value}" ${existing?.type === value ? "selected" : ""}>${icon} ${label}</option>`).join("")}</select></div><div class="form-field"><label class="form-label">Эмодзи</label><select id="diaryHealthEmoji" class="input">${["💉","🪱","🦟","🦷","💊","🩺","❤️","⭐"].map(x => `<option value="${x}" ${emoji===x?"selected":""}>${x}</option>`).join("")}</select></div><div class="form-field"><label class="form-label">Дата события</label><input id="diaryHealthDate" class="input" type="date" required value="${existing?.date || ""}"></div><div class="form-field"><label class="form-label">Следующая дата</label><input id="diaryHealthNextDate" class="input" type="date" value="${existing?.nextDate || ""}"></div><div class="form-field"><label class="form-label">Напомнить заранее</label><select id="diaryHealthReminder" class="input">${[1,3,7,14,30].map(days => `<option value="${days}" ${Number(existing?.reminderDays || 14)===days?"selected":""}>За ${days} ${days===1?"день":"дней"}</option>`).join("")}</select></div><div class="form-field"><label class="form-label">Комментарий</label><input id="diaryHealthNote" class="input" type="text" value="${escapeHtml(existing?.note || "")}"></div><button type="button" class="button" onclick="window.saveDiaryHealthEvent('${eventId}')">Сохранить</button>${existing ? `<button type="button" class="button button-secondary" onclick="window.deleteDiaryHealthEvent('${eventId}')">Удалить</button>` : ""}</div>`;
         document.body.appendChild(modal);
     };
 
