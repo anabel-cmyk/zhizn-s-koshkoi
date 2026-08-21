@@ -35,16 +35,22 @@ function createTask(task) {
         <div class="task">
             <div class="task-main">
                 <div class="task-icon">${task.icon}</div>
+
                 <div class="task-text">
-                    <div class="task-name">${escapeHtml(task.name)}</div>
+                    <div class="task-name">
+                        ${escapeHtml(task.name)}
+                        ${shared ? '<span class="task-shared-badge">Общая</span>' : ''}
+                    </div>
                     <div class="task-time">${escapeHtml(task.description)}</div>
                 </div>
+
                 <button
                     class="task-settings-button"
                     type="button"
                     onclick="openTaskSettings('${task.id}')"
                     aria-label="Настройки задачи"
                 >⚙</button>
+
                 <div
                     class="check ${task.done ? "done" : ""}"
                     onclick="toggleTask('${task.id}')"
@@ -52,7 +58,6 @@ function createTask(task) {
                     aria-label="Отметить выполненным"
                 ></div>
             </div>
-            ${shared ? `<div class="task-shared-label">Общая</div>` : ""}
         </div>
     `;
 }
@@ -78,20 +83,27 @@ function openTaskSettings(taskId) {
                 <div class="task-settings-icon">${task.icon}</div>
                 <button type="button" class="task-settings-close" onclick="closeTaskSettings()" aria-label="Закрыть">×</button>
             </div>
+
             <h2 id="taskSettingsTitle">${escapeHtml(task.name)}</h2>
             <p class="task-settings-description">${escapeHtml(task.description)}</p>
+
             <label class="task-setting-row">
                 <span class="task-setting-text">
                     <strong>Общая</strong>
                     <small>Одна отметка будет применяться ко всем кошкам.</small>
                 </span>
-                <input
-                    class="task-shared-checkbox"
-                    type="checkbox"
-                    ${isTaskShared(taskId) ? "checked" : ""}
-                    onchange="toggleTaskShared('${taskId}', this.checked)"
-                >
+
+                <span class="task-toggle-control">
+                    <input
+                        class="task-shared-checkbox"
+                        type="checkbox"
+                        ${isTaskShared(taskId) ? "checked" : ""}
+                        onchange="toggleTaskShared('${taskId}', this.checked)"
+                    >
+                    <span class="task-toggle" aria-hidden="true"></span>
+                </span>
             </label>
+
             <button type="button" class="task-settings-done" onclick="closeTaskSettings()">Готово</button>
         </div>
     `;
