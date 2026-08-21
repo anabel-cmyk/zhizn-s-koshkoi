@@ -1,0 +1,66 @@
+/* ========================================
+   0.9.3 — HEALTH / CALENDAR
+   ======================================== */
+
+.health-profile-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px;
+}
+
+.health-avatar {
+    width: 58px;
+    height: 58px;
+    flex: 0 0 58px;
+    border: 0;
+    border-radius: 50%;
+    overflow: hidden;
+    background: #f1efe9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    cursor: pointer;
+}
+
+.health-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.health-profile-info { flex: 1; min-width: 0; }
+.health-profile-info h2 { margin: 0 0 3px; font-size: 19px; }
+.health-profile-info p { margin: 0; color: #777; font-size: 13px; }
+.health-profile-edit { border: 0; background: none; color: #777; cursor: pointer; }
+.health-profile-form { margin-top: 10px; }
+.health-photo-note { margin: 0 0 14px; color: #888; font-size: 12px; }
+
+.health-calendar { padding: 16px; margin-top: 16px; }
+.health-calendar-header { display: grid; grid-template-columns: 36px 1fr 36px; align-items: center; text-align: center; margin-bottom: 16px; }
+.health-calendar-header button { border: 0; background: transparent; font-size: 28px; line-height: 1; cursor: pointer; color: #555; }
+.health-calendar-header strong { text-transform: capitalize; font-size: 16px; }
+.health-calendar-weekdays, .health-calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.health-calendar-weekdays { margin-bottom: 6px; text-align: center; color: #999; font-size: 10px; }
+.health-calendar-day { min-height: 38px; border-radius: 9px; display: flex; align-items: center; justify-content: center; position: relative; font-size: 13px; }
+.health-calendar-day.today { background: #f1efe9; font-weight: 600; }
+.health-calendar-day.has-event span { font-weight: 600; }
+.health-calendar-day i { position: absolute; bottom: 5px; width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+.health-calendar-day.empty { visibility: hidden; }
+
+.health-event-card { display: flex; justify-content: space-between; gap: 14px; align-items: center; padding: 15px; cursor: pointer; }
+.health-event-main { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.health-event-main span { color: #777; font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
+.health-event-dates { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; white-space: nowrap; font-size: 12px; }
+.health-event-dates small { color: #888; }
+.health-empty { color: #888; font-size: 13px; }
+.health-upcoming { padding: 4px 15px; }
+.health-upcoming-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #eee; font-size: 13px; }
+.health-upcoming-item:last-child { border-bottom: 0; }
+
+.health-event-modal { position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
+.health-event-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.28); backdrop-filter: blur(3px); }
+.health-event-dialog { position: relative; z-index: 1; width: min(430px, calc(100vw - 40px)); max-height: calc(100dvh - 40px); overflow-y: auto; box-sizing: border-box; padding: 24px; background: #fff; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,.18); }
+.health-event-dialog h2 { margin: 0 0 18px; }
+.health-event-close { position: absolute; top: 12px; right: 14px; border: 0; background: none; font-size: 25px; color: #777; cursor: pointer; }
+
+@media (max-width: 420px) {
+    .health-event-card { align-items: flex-start; }
+    .health-event-dates { font-size: 11px; }
+}
