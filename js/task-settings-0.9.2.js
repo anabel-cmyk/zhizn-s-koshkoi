@@ -52,7 +52,7 @@ function createTask(task) {
                     aria-label="Отметить выполненным"
                 ></div>
             </div>
-            ${shared ? `<div class="task-shared-label">Общая для всех кошек</div>` : ""}
+            ${shared ? `<div class="task-shared-label">Общая</div>` : ""}
         </div>
     `;
 }
@@ -82,7 +82,7 @@ function openTaskSettings(taskId) {
             <p class="task-settings-description">${escapeHtml(task.description)}</p>
             <label class="task-setting-row">
                 <span class="task-setting-text">
-                    <strong>Общая для всех кошек</strong>
+                    <strong>Общая</strong>
                     <small>Одна отметка будет применяться ко всем кошкам.</small>
                 </span>
                 <input
