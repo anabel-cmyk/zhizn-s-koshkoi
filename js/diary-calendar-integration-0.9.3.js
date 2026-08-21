@@ -1,8 +1,7 @@
 // ========================================
 // 0.9.3 — ДНЕВНИК: ПРОГРЕСС / КАЛЕНДАРЬ
-// Каркас подразделов поверх существующего Дневника.
-// Прогресс = существующий Дневник без изменений.
-// Календарь = медицинский календарь из Здоровья.
+// Надёжная интеграция: переключатель добавляется
+// непосредственно в DOM существующего Дневника.
 // ========================================
 (function () {
     let mode = "progress";
@@ -11,9 +10,7 @@
         const cats = getCats();
         if (!cats.length) return null;
         const id = diarySelectedCatId || getActiveCatId();
-        return id === "all"
-            ? getActiveCat()
-            : (cats.find(c => c.id === id) || getActiveCat());
+        return id === "all" ? getActiveCat() : (cats.find(c => c.id === id) || getActiveCat());
     }
 
     function switcher() {
@@ -25,15 +22,17 @@
 
     function ensureSwitcher() {
         const content = document.getElementById("content");
-        if (!content || content.querySelector(".diary-mode-switcher")) return;
-        const anchor = content.querySelector(".diary-cat-switcher") || content.querySelector(".history-header");
-        if (anchor) anchor.insertAdjacentHTML("afterend", switcher());
+        if (!content) return;
+        const header = content.querySelector(".history-header");
+        if (!header) return;
+        if (content.querySelector(".diary-mode-switcher")) return;
+        header.insertAdjacentHTML("afterend", switcher());
     }
 
     function healthCalendar(cat) {
         const health = typeof getCatHealth === "function" ? getCatHealth(cat.id) : {};
         const events = Array.isArray(health.medicalEvents) ? health.medicalEvents : [];
-        const key = window.diaryHealthMonth || (typeof getHealthMonthKey === "function" ? getHealthMonthKey(new Date()) : getTodayKey().slice(0, 7));
+        const key = window.diaryHealthMonth || getTodayKey().slice(0, 7);
         window.diaryHealthMonth = key;
         const [year, month] = key.split("-").map(Number);
         const first = new Date(year, month - 1, 1);
@@ -66,9 +65,23 @@
         </div><div id="diaryHealthDateEvents"></div>`;
     }
 
+    function renderCalendar() {
+        const content = document.getElementById("content");
+        const cat = currentCat();
+        if (!content || !cat) return;
+        content.innerHTML = `<div class="history-header"><button class="back-button" onclick="renderApp()">← Назад</button><h1>Дневник</h1></div>${typeof createDiaryCatSwitcher === "function" ? createDiaryCatSwitcher() : ""}${switcher()}<div class="diary-subtitle">Календарь здоровья <strong>${escapeHtml(cat.name)}</strong></div>${healthCalendar(cat)}<button class="button diary-add-health" onclick="openHealthEventForm()">＋ Добавить событие</button>`;
+    }
+
     window.setDiarySubsection = function (next) {
         mode = next === "calendar" ? "calendar" : "progress";
-        render();
+        if (mode === "calendar") {
+            renderCalendar();
+        } else {
+            window.__diarySubsectionRendering = true;
+            if (typeof window.__diaryOriginalOpenHistory === "function") window.__diaryOriginalOpenHistory();
+            window.__diarySubsectionRendering = false;
+            setTimeout(ensureSwitcher, 0);
+        }
     };
 
     window.shiftDiaryHealthMonth = function (delta) {
@@ -76,7 +89,7 @@
         const [y, m] = key.split("-").map(Number);
         const d = new Date(y, m - 1 + delta, 1);
         window.diaryHealthMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-        render();
+        renderCalendar();
     };
 
     window.openDiaryHealthDate = function (date) {
@@ -91,33 +104,34 @@
         target.innerHTML = `<div class="section-title">${escapeHtml(title)}</div>${dayEvents.length ? dayEvents.map(e => `<div class="card health-event-card"><div><strong>${escapeHtml(e.emoji || "🩺")} ${escapeHtml(e.title || "Медицинское событие")}</strong>${e.note ? `<div class="health-event-note">${escapeHtml(e.note)}</div>` : ""}</div><div>${e.nextDate ? `<small>Следующая: ${formatShortDate(e.nextDate)}</small>` : ""}</div></div>`).join("") : `<div class="card health-empty">На этот день медицинских событий нет.</div>`}`;
     };
 
-    function render() {
-        const content = document.getElementById("content");
-        if (!content || !getCats().length) return;
-
-        if (mode === "progress") {
-            window.__diarySubsectionRendering = true;
-            window.__diaryOriginalOpenHistory();
-            window.__diarySubsectionRendering = false;
-            ensureSwitcher();
-            return;
-        }
-
-        const cat = currentCat();
-        if (!cat) return;
-        content.innerHTML = `<div class="history-header"><button class="back-button" onclick="renderApp()">← Назад</button><h1>Дневник</h1></div>${createDiaryCatSwitcher()}${switcher()}<div class="diary-subtitle">Здоровье <strong>${escapeHtml(cat.name)}</strong></div>${healthCalendar(cat)}<button class="button diary-add-health" onclick="openHealthEventForm()">＋ Добавить событие</button>`;
-    }
-
+    // Сохраняем исходный Дневник и перехватываем только его открытие.
     const original = window.openHistory;
     if (!window.__diaryOriginalOpenHistory) window.__diaryOriginalOpenHistory = original;
     window.openHistory = function () {
-        if (window.__diarySubsectionRendering) return window.__diaryOriginalOpenHistory();
-        render();
+        mode = "progress";
+        if (typeof window.__diaryOriginalOpenHistory === "function") {
+            window.__diarySubsectionRendering = true;
+            window.__diaryOriginalOpenHistory();
+            window.__diarySubsectionRendering = false;
+            setTimeout(ensureSwitcher, 0);
+        }
     };
 
-    document.addEventListener("DOMContentLoaded", () => {
-        setTimeout(() => {
-            if (document.getElementById("content")?.querySelector(".history-header")) ensureSwitcher();
-        }, 0);
-    });
+    // MutationObserver нужен потому, что существующий diary.js полностью
+    // перерисовывает #content через innerHTML.
+    function startObserver() {
+        const content = document.getElementById("content");
+        if (!content) return;
+        const observer = new MutationObserver(() => {
+            if (mode === "progress") ensureSwitcher();
+        });
+        observer.observe(content, { childList: true, subtree: true });
+        ensureSwitcher();
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", startObserver, { once: true });
+    } else {
+        startObserver();
+    }
 })();
