@@ -1,7 +1,9 @@
 /* ========================================
-   TASK SETTINGS 0.9.2
+   TASK SETTINGS 0.9.2 — FINAL LAYOUT
    ======================================== */
 
+/* Карточка задачи остаётся обычной вертикальной карточкой,
+   а её верхняя строка всегда держит ⚙ и чекбокс внутри. */
 .task {
     display: block;
     width: 100%;
@@ -9,25 +11,35 @@
 }
 
 .task-main {
-    display: flex;
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) 34px 25px;
     align-items: center;
-    gap: 14px;
+    column-gap: 14px;
     width: 100%;
     min-width: 0;
     box-sizing: border-box;
 }
 
+.task-main .task-icon {
+    grid-column: 1;
+    grid-row: 1;
+}
+
 .task-main .task-text {
-    flex: 1 1 auto;
+    grid-column: 2;
+    grid-row: 1;
     min-width: 0;
+    width: 100%;
 }
 
 .task-settings-button {
+    grid-column: 3;
+    grid-row: 1;
     width: 34px;
     height: 34px;
-    flex: 0 0 34px;
     margin: 0;
     padding: 0;
+    flex: none;
     border: 0;
     border-radius: 50%;
     background: transparent;
@@ -46,8 +58,16 @@
     color: #222;
 }
 
+.task-main .check {
+    grid-column: 4;
+    grid-row: 1;
+    width: 25px;
+    height: 25px;
+    margin: 0;
+}
+
 .task-shared-label {
-    margin: 2px 0 0 54px;
+    margin: 3px 0 0 54px;
     color: #888;
     font-size: 11px;
     line-height: 1.25;
@@ -64,7 +84,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 20px;
+    padding: 16px;
     box-sizing: border-box;
     opacity: 0;
     visibility: hidden;
@@ -87,11 +107,11 @@
     position: relative;
     z-index: 1;
     width: min(420px, calc(100vw - 32px));
-    max-height: calc(100dvh - 40px);
+    max-height: calc(100dvh - 32px);
     overflow-y: auto;
     box-sizing: border-box;
+    margin: 0;
     padding: 24px;
-    margin: 0 auto;
     background: #fff;
     border-radius: 20px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, .16);
@@ -104,14 +124,15 @@
 }
 
 .task-settings-icon {
+    margin-bottom: 8px;
     font-size: 32px;
-    margin-bottom: 10px;
 }
 
 .task-settings-close {
     width: 32px;
     height: 32px;
     flex: 0 0 32px;
+    margin: -4px -4px 0 0;
     padding: 0;
     border: 0;
     background: transparent;
@@ -122,14 +143,15 @@
 }
 
 .task-settings-dialog h2 {
-    margin: 0 0 6px;
+    margin: 0 0 5px;
     font-size: 22px;
 }
 
 .task-settings-description {
-    margin: 0 0 14px;
+    margin: 0 0 12px;
     color: #777;
     font-size: 14px;
+    line-height: 1.35;
 }
 
 .task-setting-row {
@@ -137,13 +159,16 @@
     align-items: center;
     justify-content: space-between;
     gap: 18px;
+    width: 100%;
+    box-sizing: border-box;
     cursor: pointer;
 }
 
 .task-setting-text {
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 2px;
 }
 
 .task-setting-text strong {
@@ -154,19 +179,20 @@
 .task-setting-text small {
     color: #888;
     font-size: 12px;
-    line-height: 1.4;
+    line-height: 1.35;
 }
 
 .task-shared-checkbox {
     width: 22px;
     height: 22px;
     flex: 0 0 22px;
+    margin: 0;
     accent-color: #222;
 }
 
 .task-settings-done {
     width: 100%;
-    margin-top: 20px;
+    margin-top: 18px;
     padding: 13px 16px;
     border: 0;
     border-radius: 13px;
@@ -180,4 +206,15 @@
 /* Убираем подпись «История ухода за…» из Дневника. */
 .diary-subtitle {
     display: none !important;
+}
+
+@media (max-width: 380px) {
+    .task-main {
+        grid-template-columns: 40px minmax(0, 1fr) 30px 25px;
+        column-gap: 10px;
+    }
+
+    .task-settings-button {
+        width: 30px;
+    }
 }
