@@ -1,24 +1,28 @@
-// 0.9.3 — profile fields: avatar + gender.
-// Статус кастрации/стерилизации пока намеренно не добавляем.
+// 0.9.3 — profile fields: avatar + gender
+// Кастрацию/стерилизацию пока намеренно не добавляем.
 let pendingCatAvatar = "";
 
 (function () {
     const originalOpenModal = window.openModal;
     const originalOpenModalWithCurrentCat = window.openModalWithCurrentCat;
-    const originalSaveCat = window.saveCat;
 
     function applyProfileFields(cat) {
         const gender = document.getElementById("catGender");
         const preview = document.getElementById("catAvatarPreview");
         if (gender) gender.value = cat?.gender || "";
-        if (preview) preview.innerHTML = cat?.avatar ? `<img src="${cat.avatar}" alt="">` : "🐈";
+        if (preview) {
+            preview.innerHTML = cat?.avatar
+                ? `<img src="${cat.avatar}" alt="">`
+                : "🐈";
+        }
+        const input = document.getElementById("catAvatarInput");
+        if (input) input.value = "";
         pendingCatAvatar = "";
     }
 
     window.chooseProfileAvatar = function (input) {
         const file = input?.files?.[0];
-        if (!file) return;
-        if (!file.type.startsWith("image/")) return;
+        if (!file || !file.type.startsWith("image/")) return;
         const reader = new FileReader();
         reader.onload = () => {
             pendingCatAvatar = String(reader.result || "");
@@ -41,30 +45,69 @@ let pendingCatAvatar = "";
         setTimeout(() => applyProfileFields(cat), 0);
     };
 
+    // Собственное сохранение профиля: не даём cats.js пересоздать объект
+    // и потерять дополнительные поля avatar/gender.
     window.saveCat = function () {
-        // ВАЖНО: cats.js сбрасывает editingCatId внутри originalSaveCat(),
-        // поэтому все данные текущего профиля запоминаем ДО вызова оригинала.
-        const editingId = typeof editingCatId !== "undefined" ? editingCatId : null;
-        const beforeCats = getCats();
-        const beforeCat = editingId ? beforeCats.find(cat => cat.id === editingId) : null;
-        const gender = document.getElementById("catGender")?.value || "";
-        const avatar = pendingCatAvatar;
-        const preservedAvatar = avatar || beforeCat?.avatar || "";
+        const nameInput = document.getElementById("catName");
+        const birthDateInput = document.getElementById("catBirthDate");
+        const ageInput = document.getElementById("catAgeValue");
+        const ageUnitInput = document.getElementById("catAgeUnit");
+        const ageField = document.getElementById("ageField");
+        const genderInput = document.getElementById("catGender");
 
-        originalSaveCat();
+        const name = nameInput?.value.trim() || "";
+        const birthDate = birthDateInput?.value || "";
+        const ageValue = ageInput?.value || "";
+        const ageUnit = ageUnitInput?.value || "years";
+        const gender = genderInput?.value || "";
+
+        if (!name) {
+            alert("Введите имя кошки");
+            return;
+        }
+
+        if (ageField?.hidden && !birthDate) {
+            alert("Укажите дату рождения или возраст кошки");
+            return;
+        }
+        if (!ageField?.hidden && !ageValue) {
+            alert("Укажите возраст кошки");
+            return;
+        }
 
         const cats = getCats();
-        const targetId = editingId || getActiveCatId();
-        const savedCat = cats.find(item => item.id === targetId);
-        if (!savedCat) return;
+        const editingId = typeof editingCatId !== "undefined" ? editingCatId : null;
+        const existing = editingId ? cats.find(c => c.id === editingId) : null;
+        const avatar = pendingCatAvatar || existing?.avatar || "";
 
-        savedCat.gender = gender;
-        if (preservedAvatar) savedCat.avatar = preservedAvatar;
-        else delete savedCat.avatar;
+        const cat = {
+            ...(existing || {}),
+            id: existing?.id || createId(),
+            name,
+            birthDate: ageField?.hidden ? birthDate : null,
+            ageValue: ageField?.hidden ? null : Number(ageValue),
+            ageUnit: ageField?.hidden ? null : ageUnit,
+            gender,
+            avatar,
+            createdAt: existing?.createdAt || new Date().toISOString()
+        };
+
+        const index = cats.findIndex(c => c.id === cat.id);
+        if (index >= 0) cats[index] = cat;
+        else cats.push(cat);
 
         saveCats(cats);
-        setActiveCatId(savedCat.id);
+        setActiveCatId(cat.id);
+        editingCatId = null;
         pendingCatAvatar = "";
+
+        const modal = document.getElementById("modal");
+        if (modal) {
+            modal.classList.remove("active");
+            modal.setAttribute("aria-hidden", "true");
+        }
+        if (typeof resetForm === "function") resetForm();
+        if (typeof setDeleteButtonVisible === "function") setDeleteButtonVisible(false);
         renderApp();
     };
 })();
