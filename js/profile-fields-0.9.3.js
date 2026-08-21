@@ -19,19 +19,54 @@ let profileEditingCatId = null;
         pendingCatAvatarPromise = null;
     }
 
+    // Большие фотографии нельзя надёжно хранить в localStorage как исходный файл:
+    // они быстро упираются в лимит хранилища. Перед сохранением уменьшаем только
+    // размер данных, сохраняя нормальное качество и пропорции.
+    function prepareAvatar(file) {
+        return new Promise((resolve, reject) => {
+            if (!file || !file.type.startsWith("image/")) return reject(new Error("not-image"));
+            const reader = new FileReader();
+            reader.onerror = () => reject(reader.error || new Error("read-error"));
+            reader.onload = () => {
+                const img = new Image();
+                img.onerror = () => reject(new Error("image-error"));
+                img.onload = () => {
+                    const maxSide = 900;
+                    const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+                    const width = Math.max(1, Math.round(img.naturalWidth * scale));
+                    const height = Math.max(1, Math.round(img.naturalHeight * scale));
+                    const canvas = document.createElement("canvas");
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext("2d");
+                    if (!ctx) return reject(new Error("canvas-error"));
+                    ctx.drawImage(img, 0, 0, width, height);
+                    canvas.toBlob(blob => {
+                        if (!blob) return reject(new Error("blob-error"));
+                        const r = new FileReader();
+                        r.onerror = () => reject(r.error || new Error("blob-read-error"));
+                        r.onload = () => resolve(String(r.result || ""));
+                        r.readAsDataURL(blob);
+                    }, "image/jpeg", 0.88);
+                };
+                img.src = String(reader.result || "");
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
     window.chooseProfileAvatar = function (input) {
         const file = input?.files?.[0];
         if (!file || !file.type.startsWith("image/")) return;
-        pendingCatAvatarPromise = new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => {
-                pendingCatAvatar = String(reader.result || "");
-                const preview = document.getElementById("catAvatarPreview");
-                if (preview) preview.innerHTML = `<img src="${pendingCatAvatar}" alt="">`;
-                resolve(pendingCatAvatar);
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
+        pendingCatAvatarPromise = prepareAvatar(file).then(data => {
+            pendingCatAvatar = data;
+            const preview = document.getElementById("catAvatarPreview");
+            if (preview) preview.innerHTML = `<img src="${data}" alt="">`;
+            return data;
+        });
+        pendingCatAvatarPromise.catch(() => {
+            pendingCatAvatar = "";
+            alert("Не удалось подготовить фото");
         });
     };
 
@@ -90,7 +125,13 @@ let profileEditingCatId = null;
 
         const index = cats.findIndex(c => c.id === cat.id);
         if (index >= 0) cats[index] = cat; else cats.push(cat);
-        saveCats(cats);
+        try {
+            saveCats(cats);
+        } catch (error) {
+            console.error("Не удалось сохранить профиль кошки", error);
+            alert("Не удалось сохранить фото. Попробуйте выбрать другое фото.");
+            return false;
+        }
         setActiveCatId(cat.id);
         editingCatId = null;
         profileEditingCatId = null;
