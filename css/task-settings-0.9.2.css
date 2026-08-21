@@ -1,5 +1,5 @@
 /* ========================================
-   TASK SETTINGS 0.9.2 — FINAL UI
+   TASK SETTINGS 0.9.2 — UI
    ======================================== */
 
 .task {
@@ -18,11 +18,7 @@
     box-sizing: border-box;
 }
 
-.task-main .task-icon {
-    grid-column: 1;
-    grid-row: 1;
-}
-
+.task-main .task-icon { grid-column: 1; grid-row: 1; }
 .task-main .task-text {
     grid-column: 2;
     grid-row: 1;
@@ -55,11 +51,11 @@
     color: #222;
 }
 
-/* «Общая» рядом с названием, максимально близко к нему. */
+/* «Общая» непосредственно после заголовка. */
 .task-shared-badge {
     display: inline-flex;
     align-items: center;
-    margin-left: 3px;
+    margin-left: 1px;
     padding: 2px 5px;
     border-radius: 6px;
     background: #f1f1f1;
@@ -75,28 +71,25 @@
    SETTINGS MODAL
    ======================================== */
 
+/* Полноэкранный слой не зависит от ширины .app. */
 .task-settings-modal {
     position: fixed !important;
+    z-index: 2147483000 !important;
     inset: 0 !important;
-    z-index: 1000 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    width: auto !important;
-    height: auto !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
-    padding: 16px !important;
+    width: 100vw !important;
+    height: 100dvh !important;
     margin: 0 !important;
+    padding: 0 !important;
     box-sizing: border-box !important;
+    display: block !important;
     overflow: hidden !important;
     opacity: 0;
     visibility: hidden;
     transform: none !important;
     left: 0 !important;
-    right: 0 !important;
     top: 0 !important;
-    bottom: 0 !important;
+    right: auto !important;
+    bottom: auto !important;
     transition: opacity .18s ease, visibility .18s ease;
 }
 
@@ -106,31 +99,34 @@
 }
 
 .task-settings-overlay {
-    position: absolute !important;
+    position: fixed !important;
+    z-index: 0 !important;
     inset: 0 !important;
-    width: auto !important;
-    height: auto !important;
+    width: 100vw !important;
+    height: 100dvh !important;
     margin: 0 !important;
     background: rgba(0, 0, 0, .25);
     backdrop-filter: blur(3px);
 }
 
+/* Само окно позиционируется относительно viewport,
+   поэтому родительские flex/width/transform стили приложения
+   больше никак не влияют на его горизонтальное положение. */
 .task-settings-dialog {
-    position: relative !important;
+    position: fixed !important;
     z-index: 1 !important;
-    flex: 0 1 auto !important;
-    width: min(420px, 100%) !important;
+    left: 50% !important;
+    top: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: min(420px, calc(100vw - 32px)) !important;
     max-width: 420px !important;
     max-height: calc(100dvh - 32px) !important;
     margin: 0 !important;
     padding: 24px !important;
     overflow-y: auto;
     box-sizing: border-box !important;
-    transform: none !important;
-    left: auto !important;
-    right: auto !important;
-    top: auto !important;
-    bottom: auto !important;
+    transform: translate(-50%, -50%) !important;
     background: #fff;
     border-radius: 20px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, .16);
@@ -271,6 +267,7 @@
 }
 
 .task-settings-done {
+    display: block;
     width: 100%;
     margin-top: 18px;
     padding: 13px 16px;
@@ -299,17 +296,13 @@
     }
 
     .task-shared-badge {
-        margin-left: 2px;
+        margin-left: 0;
         padding: 2px 4px;
         font-size: 9px;
     }
 
-    .task-settings-modal {
-        padding: 12px !important;
-    }
-
     .task-settings-dialog {
-        width: 100% !important;
+        width: calc(100vw - 24px) !important;
         max-width: none !important;
         padding: 20px !important;
     }
