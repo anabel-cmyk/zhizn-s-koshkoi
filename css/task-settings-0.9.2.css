@@ -1,9 +1,7 @@
 /* ========================================
-   TASK SETTINGS 0.9.2 — FINAL LAYOUT
+   TASK SETTINGS 0.9.2 — FINAL UI
    ======================================== */
 
-/* Карточка задачи остаётся обычной вертикальной карточкой,
-   а её верхняя строка всегда держит ⚙ и чекбокс внутри. */
 .task {
     display: block;
     width: 100%;
@@ -14,7 +12,7 @@
     display: grid;
     grid-template-columns: 40px minmax(0, 1fr) 34px 25px;
     align-items: center;
-    column-gap: 14px;
+    column-gap: 12px;
     width: 100%;
     min-width: 0;
     box-sizing: border-box;
@@ -39,7 +37,6 @@
     height: 34px;
     margin: 0;
     padding: 0;
-    flex: none;
     border: 0;
     border-radius: 50%;
     background: transparent;
@@ -58,19 +55,21 @@
     color: #222;
 }
 
-.task-main .check {
-    grid-column: 4;
-    grid-row: 1;
-    width: 25px;
-    height: 25px;
-    margin: 0;
-}
-
-.task-shared-label {
-    margin: 3px 0 0 54px;
+/* «Общая» теперь находится рядом с названием задачи,
+   поэтому карточка не становится выше. */
+.task-shared-badge {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 7px;
+    padding: 2px 6px;
+    border-radius: 6px;
+    background: #f1f1f1;
     color: #888;
-    font-size: 11px;
+    font-size: 10px;
+    font-weight: 500;
     line-height: 1.25;
+    vertical-align: middle;
+    white-space: nowrap;
 }
 
 /* ========================================
@@ -84,8 +83,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 100vw;
+    height: 100dvh;
     padding: 16px;
+    margin: 0;
     box-sizing: border-box;
+    overflow: hidden;
     opacity: 0;
     visibility: hidden;
     transition: opacity .18s ease, visibility .18s ease;
@@ -99,6 +102,8 @@
 .task-settings-overlay {
     position: absolute;
     inset: 0;
+    width: 100%;
+    height: 100%;
     background: rgba(0, 0, 0, .25);
     backdrop-filter: blur(3px);
 }
@@ -107,11 +112,12 @@
     position: relative;
     z-index: 1;
     width: min(420px, calc(100vw - 32px));
+    max-width: 420px;
     max-height: calc(100dvh - 32px);
+    margin: 0 auto;
+    padding: 24px;
     overflow-y: auto;
     box-sizing: border-box;
-    margin: 0;
-    padding: 24px;
     background: #fff;
     border-radius: 20px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, .16);
@@ -121,6 +127,8 @@
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .task-settings-icon {
@@ -148,7 +156,7 @@
 }
 
 .task-settings-description {
-    margin: 0 0 12px;
+    margin: 0 0 14px;
     color: #777;
     font-size: 14px;
     line-height: 1.35;
@@ -158,14 +166,16 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 18px;
+    gap: 16px;
     width: 100%;
+    min-width: 0;
     box-sizing: border-box;
     cursor: pointer;
 }
 
 .task-setting-text {
     min-width: 0;
+    flex: 1 1 auto;
     display: flex;
     flex-direction: column;
     gap: 2px;
@@ -182,12 +192,65 @@
     line-height: 1.35;
 }
 
+/* ========================================
+   CUSTOM TOGGLE
+   ======================================== */
+
+.task-toggle-control {
+    position: relative;
+    display: block;
+    flex: 0 0 48px;
+    width: 48px;
+    height: 28px;
+}
+
 .task-shared-checkbox {
+    position: absolute;
+    inset: 0;
+    width: 48px;
+    height: 28px;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 2;
+}
+
+.task-toggle {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 48px;
+    height: 28px;
+    box-sizing: border-box;
+    border-radius: 999px;
+    background: #d8d8d8;
+    transition: background-color .18s ease;
+}
+
+.task-toggle::after {
+    content: "";
+    position: absolute;
     width: 22px;
     height: 22px;
-    flex: 0 0 22px;
-    margin: 0;
-    accent-color: #222;
+    top: 3px;
+    left: 3px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, .18);
+    transition: transform .18s ease;
+}
+
+.task-shared-checkbox:checked + .task-toggle {
+    background: #222;
+}
+
+.task-shared-checkbox:checked + .task-toggle::after {
+    transform: translateX(20px);
+}
+
+.task-shared-checkbox:focus-visible + .task-toggle {
+    outline: 2px solid #777;
+    outline-offset: 2px;
 }
 
 .task-settings-done {
@@ -201,9 +264,9 @@
     font-size: 15px;
     font-weight: 600;
     cursor: pointer;
+    box-sizing: border-box;
 }
 
-/* Убираем подпись «История ухода за…» из Дневника. */
 .diary-subtitle {
     display: none !important;
 }
@@ -211,10 +274,16 @@
 @media (max-width: 380px) {
     .task-main {
         grid-template-columns: 40px minmax(0, 1fr) 30px 25px;
-        column-gap: 10px;
+        column-gap: 8px;
     }
 
     .task-settings-button {
         width: 30px;
+    }
+
+    .task-shared-badge {
+        margin-left: 5px;
+        padding: 2px 5px;
+        font-size: 9px;
     }
 }
