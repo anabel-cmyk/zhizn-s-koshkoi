@@ -1,26 +1,23 @@
-// 0.9.3 — profile-only fields: avatar, gender, neutered status
+// 0.9.3 — profile fields: avatar + gender.
+// Статус кастрации/стерилизации пока намеренно не добавляем:
+// он не используется в ближайшей логике приложения.
 let pendingCatAvatar = "";
+
 (function () {
     const originalOpenModal = window.openModal;
     const originalOpenModalWithCurrentCat = window.openModalWithCurrentCat;
     const originalSaveCat = window.saveCat;
-    function setProfileFields(cat) {
+
+    function applyProfileFields(cat) {
         const gender = document.getElementById("catGender");
-        const neutered = document.getElementById("catNeutered");
         const preview = document.getElementById("catAvatarPreview");
-        const avatarInput = document.getElementById("catAvatarInput");
+        const avatar = cat?.avatar || "";
+
         if (gender) gender.value = cat?.gender || "";
-        if (neutered) neutered.checked = cat?.neutered === true;
-        updateNeuteredLabel();
-        const avatar = cat?.avatar || (cat && typeof getCatHealth === "function" ? getCatHealth(cat.id).avatar : "");
         if (preview) preview.innerHTML = avatar ? `<img src="${avatar}" alt="">` : "🐈";
-        if (avatarInput) avatarInput.value = "";
+        pendingCatAvatar = "";
     }
-    window.updateNeuteredLabel = function () {
-        const gender = document.getElementById("catGender")?.value || "";
-        const label = document.getElementById("catNeuteredLabel");
-        if (label) label.textContent = gender === "Кот" ? "Кастрирован" : gender === "Кошка" ? "Стерилизована" : "Кастрирован(а)";
-    };
+
     window.chooseProfileAvatar = function (input) {
         const file = input?.files?.[0];
         if (!file) return;
@@ -32,31 +29,39 @@ let pendingCatAvatar = "";
         };
         reader.readAsDataURL(file);
     };
+
     window.openModal = function () {
         pendingCatAvatar = "";
         originalOpenModal();
-        setTimeout(() => setProfileFields(null), 0);
+        setTimeout(() => applyProfileFields(null), 0);
     };
+
     window.openModalWithCurrentCat = function () {
         const cat = getActiveCat();
         pendingCatAvatar = "";
         originalOpenModalWithCurrentCat();
-        setTimeout(() => setProfileFields(cat), 0);
+        setTimeout(() => applyProfileFields(cat), 0);
     };
+
     window.saveCat = function () {
         const gender = document.getElementById("catGender")?.value || "";
-        const neutered = document.getElementById("catNeutered")?.checked === true;
         const avatar = pendingCatAvatar;
+        const editingId = typeof editingCatId !== "undefined" ? editingCatId : null;
+
+        // Сохраняем базовые поля через существующую систему.
         originalSaveCat();
-        const cat = getActiveCat();
-        if (!cat) return;
+
         const cats = getCats();
-        const savedCat = cats.find(item => item.id === cat.id);
+        const targetId = editingId || getActiveCatId();
+        const savedCat = cats.find(item => item.id === targetId);
         if (!savedCat) return;
+
         savedCat.gender = gender;
-        savedCat.neutered = neutered;
+        // При редактировании старый аватар сохраняется, если новый не выбран.
         if (avatar) savedCat.avatar = avatar;
+
         saveCats(cats);
+        setActiveCatId(savedCat.id);
         pendingCatAvatar = "";
         renderApp();
     };
