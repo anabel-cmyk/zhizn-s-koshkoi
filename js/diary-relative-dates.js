@@ -11,9 +11,9 @@ function getRelativeDiaryLabel(dateKey) {
 
     const diff = Math.round((today - date) / 86400000);
 
-    if (diff === 0) return "Сегодня";
-    if (diff === 1) return "Вчера";
-    if (diff === 2) return "Позавчера";
+    if (diff === 0) return "сегодня";
+    if (diff === 1) return "вчера";
+    if (diff === 2) return "позавчера";
 
     return formatDate(dateKey);
 }
