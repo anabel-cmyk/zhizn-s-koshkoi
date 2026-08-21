@@ -1,9 +1,5 @@
 // ========================================
 // ЖИЗНЬ С КОШКОЙ — TASK SETTINGS 0.9.2
-//
-// Хранит настройку shared отдельно от дневных
-// отметок. Поэтому переход на новый день не
-// превращает общую задачу обратно в индивидуальную.
 // ========================================
 
 const TASK_SHARED_SETTINGS_KEY = "taskSharedSettings";
@@ -12,19 +8,14 @@ function getTaskSharedSettings() {
     try {
         const saved = localStorage.getItem(TASK_SHARED_SETTINGS_KEY);
         const data = saved ? JSON.parse(saved) : {};
-        return data && typeof data === "object" && !Array.isArray(data)
-            ? data
-            : {};
+        return data && typeof data === "object" && !Array.isArray(data) ? data : {};
     } catch {
         return {};
     }
 }
 
 function saveTaskSharedSettings(settings) {
-    localStorage.setItem(
-        TASK_SHARED_SETTINGS_KEY,
-        JSON.stringify(settings)
-    );
+    localStorage.setItem(TASK_SHARED_SETTINGS_KEY, JSON.stringify(settings));
 }
 
 function isTaskShared(taskId) {
@@ -37,39 +28,23 @@ function setTaskSharedState(taskId, shared) {
     saveTaskSharedSettings(settings);
 }
 
-// ========================================
-// TASK CARD
-// ========================================
-
 function createTask(task) {
     const shared = isTaskShared(task.id);
 
     return `
         <div class="task">
             <div class="task-main">
-                <div class="task-icon">
-                    ${task.icon}
-                </div>
-
+                <div class="task-icon">${task.icon}</div>
                 <div class="task-text">
-                    <div class="task-name">
-                        ${escapeHtml(task.name)}
-                    </div>
-
-                    <div class="task-time">
-                        ${escapeHtml(task.description)}
-                    </div>
+                    <div class="task-name">${escapeHtml(task.name)}</div>
+                    <div class="task-time">${escapeHtml(task.description)}</div>
                 </div>
-
                 <button
                     class="task-settings-button"
                     type="button"
                     onclick="openTaskSettings('${task.id}')"
                     aria-label="Настройки задачи"
-                >
-                    ⚙
-                </button>
-
+                >⚙</button>
                 <div
                     class="check ${task.done ? "done" : ""}"
                     onclick="toggleTask('${task.id}')"
@@ -77,209 +52,117 @@ function createTask(task) {
                     aria-label="Отметить выполненным"
                 ></div>
             </div>
-
-            ${shared ? `
-                <div class="task-shared-label">
-                    Общая для всех кошек
-                </div>
-            ` : ""}
+            ${shared ? `<div class="task-shared-label">Общая для всех кошек</div>` : ""}
         </div>
     `;
 }
-
-// ========================================
-// SETTINGS MODAL
-// ========================================
 
 function openTaskSettings(taskId) {
     const activeCatId = getActiveCatId();
     if (!activeCatId) return;
 
-    const task = getDailyTasks(activeCatId)
-        .find(item => item.id === taskId);
-
+    const task = getDailyTasks(activeCatId).find(item => item.id === taskId);
     if (!task) return;
 
     closeTaskSettings();
 
-    const shared = isTaskShared(taskId);
     const modal = document.createElement("div");
-
     modal.id = "taskSettingsModal";
     modal.className = "task-settings-modal";
     modal.setAttribute("aria-hidden", "false");
 
     modal.innerHTML = `
-        <div
-            class="task-settings-overlay"
-            onclick="closeTaskSettings()"
-        ></div>
-
-        <div
-            class="task-settings-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="taskSettingsTitle"
-        >
+        <div class="task-settings-overlay" onclick="closeTaskSettings()"></div>
+        <div class="task-settings-dialog" role="dialog" aria-modal="true" aria-labelledby="taskSettingsTitle">
             <div class="task-settings-header">
-                <div class="task-settings-icon">
-                    ${task.icon}
-                </div>
-
-                <button
-                    type="button"
-                    class="task-settings-close"
-                    onclick="closeTaskSettings()"
-                    aria-label="Закрыть"
-                >
-                    ×
-                </button>
+                <div class="task-settings-icon">${task.icon}</div>
+                <button type="button" class="task-settings-close" onclick="closeTaskSettings()" aria-label="Закрыть">×</button>
             </div>
-
-            <h2 id="taskSettingsTitle">
-                ${escapeHtml(task.name)}
-            </h2>
-
-            <p class="task-settings-description">
-                ${escapeHtml(task.description)}
-            </p>
-
+            <h2 id="taskSettingsTitle">${escapeHtml(task.name)}</h2>
+            <p class="task-settings-description">${escapeHtml(task.description)}</p>
             <label class="task-setting-row">
                 <span class="task-setting-text">
                     <strong>Общая для всех кошек</strong>
-                    <small>
-                        Одна отметка будет применяться ко всем кошкам.
-                    </small>
+                    <small>Одна отметка будет применяться ко всем кошкам.</small>
                 </span>
-
                 <input
                     class="task-shared-checkbox"
                     type="checkbox"
-                    ${shared ? "checked" : ""}
+                    ${isTaskShared(taskId) ? "checked" : ""}
                     onchange="toggleTaskShared('${taskId}', this.checked)"
                 >
             </label>
-
-            <button
-                type="button"
-                class="task-settings-done"
-                onclick="closeTaskSettings()"
-            >
-                Готово
-            </button>
+            <button type="button" class="task-settings-done" onclick="closeTaskSettings()">Готово</button>
         </div>
     `;
 
     document.body.appendChild(modal);
-
-    requestAnimationFrame(() => {
-        modal.classList.add("active");
-    });
+    requestAnimationFrame(() => modal.classList.add("active"));
 }
 
 function closeTaskSettings() {
     const modal = document.getElementById("taskSettingsModal");
     if (!modal) return;
-
     modal.classList.remove("active");
-
-    setTimeout(() => {
-        modal.remove();
-    }, 180);
+    setTimeout(() => modal.remove(), 180);
 }
-
-// ========================================
-// SHARED SETTING
-// ========================================
 
 function toggleTaskShared(taskId, requestedState) {
     const cats = getCats();
     const activeCatId = getActiveCatId();
-
     if (!cats.length || !activeCatId) return;
 
-    const newSharedState =
-        typeof requestedState === "boolean"
-            ? requestedState
-            : !isTaskShared(taskId);
+    const newSharedState = typeof requestedState === "boolean"
+        ? requestedState
+        : !isTaskShared(taskId);
 
-    // Настройка живёт отдельно от ежедневных данных.
     setTaskSharedState(taskId, newSharedState);
 
-    const storage = getTasksStorage();
     let activeTask = null;
 
-    // Получаем сегодняшние данные каждой кошки через существующую
-    // функцию, чтобы переход на новый день и история обрабатывались
-    // штатным кодом проекта.
     cats.forEach(cat => {
         const tasks = getDailyTasks(cat.id);
         const task = tasks.find(item => item.id === taskId);
-
-        if (cat.id === activeCatId) {
-            activeTask = task;
-        }
-
-        if (task) {
-            task.shared = newSharedState;
-        }
+        if (cat.id === activeCatId) activeTask = task;
     });
 
-    // При включении общей задачи берём текущее состояние
-    // активной кошки как единое состояние для всех.
     if (newSharedState) {
         const sharedDone = activeTask?.done === true;
 
         cats.forEach(cat => {
             const tasks = getDailyTasks(cat.id);
             const task = tasks.find(item => item.id === taskId);
+            if (!task) return;
 
-            if (task) {
-                task.shared = true;
-                task.done = sharedDone;
-                saveDailyTasks(getTodayKey(), tasks, cat.id);
-                saveTasksToHistory(cat.id, getTodayKey(), tasks);
-            }
+            task.shared = true;
+            task.done = sharedDone;
+            saveDailyTasks(getTodayKey(), tasks, cat.id);
+            saveTasksToHistory(cat.id, getTodayKey(), tasks);
         });
     } else {
-        // Выключение общей настройки не меняет уже сделанные
-        // отметки — они остаются индивидуальными для каждой кошки.
         cats.forEach(cat => {
             const tasks = getDailyTasks(cat.id);
             const task = tasks.find(item => item.id === taskId);
+            if (!task) return;
 
-            if (task) {
-                task.shared = false;
-                saveDailyTasks(getTodayKey(), tasks, cat.id);
-                saveTasksToHistory(cat.id, getTodayKey(), tasks);
-            }
+            task.shared = false;
+            saveDailyTasks(getTodayKey(), tasks, cat.id);
+            saveTasksToHistory(cat.id, getTodayKey(), tasks);
         });
     }
-
-    // Не используем старое поле shared как источник настройки:
-    // оно лишь отражает текущее состояние для совместимости.
-    saveTasksStorage(storage);
 
     closeTaskSettings();
     renderApp();
 }
 
-// ========================================
-// TASK TOGGLE
-// ========================================
-
 function toggleTask(taskId) {
     const cats = getCats();
     const activeCatId = getActiveCatId();
-
     if (!cats.length || !activeCatId) return;
 
-    const shared = isTaskShared(taskId);
-
-    if (shared) {
+    if (isTaskShared(taskId)) {
         const activeTasks = getDailyTasks(activeCatId);
         const activeTask = activeTasks.find(item => item.id === taskId);
-
         if (!activeTask) return;
 
         const newDoneState = !activeTask.done;
@@ -287,24 +170,20 @@ function toggleTask(taskId) {
         cats.forEach(cat => {
             const tasks = getDailyTasks(cat.id);
             const task = tasks.find(item => item.id === taskId);
-
             if (!task) return;
 
             task.shared = true;
             task.done = newDoneState;
-
             saveDailyTasks(getTodayKey(), tasks, cat.id);
             saveTasksToHistory(cat.id, getTodayKey(), tasks);
         });
     } else {
         const tasks = getDailyTasks(activeCatId);
         const task = tasks.find(item => item.id === taskId);
-
         if (!task) return;
 
         task.shared = false;
         task.done = !task.done;
-
         saveDailyTasks(getTodayKey(), tasks, activeCatId);
         saveTasksToHistory(activeCatId, getTodayKey(), tasks);
     }
@@ -312,20 +191,16 @@ function toggleTask(taskId) {
     renderApp();
 }
 
-// После старта применяем сохранённые shared-настройки к текущему дню.
 function applySavedTaskSharedSettings() {
     const settings = getTaskSharedSettings();
     const cats = getCats();
-
     if (!cats.length) return;
 
     Object.keys(settings).forEach(taskId => {
         const shared = settings[taskId] === true;
-
         cats.forEach(cat => {
             const tasks = getDailyTasks(cat.id);
             const task = tasks.find(item => item.id === taskId);
-
             if (task) {
                 task.shared = shared;
                 saveDailyTasks(getTodayKey(), tasks, cat.id);
