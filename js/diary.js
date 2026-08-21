@@ -1,14 +1,16 @@
 // ========================================
 // ЖИЗНЬ С КОШКОЙ
 // DIARY.JS
+// MVP 0.9.3
+//
 // Дневник и статистика
-// ========================================
-
-// ========================================
-// DIARY
+// + выбор кошки
+// + общая картина
 // ========================================
 
 const HISTORY_KEY = "taskHistory";
+
+let diarySelectedCatId = null;
 
 
 // ========================================
@@ -21,6 +23,7 @@ function getHistory() {
         localStorage.getItem(
             HISTORY_KEY
         );
+
 
     if (!saved) {
         return {};
@@ -111,6 +114,9 @@ function saveDayToHistory(
                         task.targetPerMonth ||
                         null,
 
+                    shared:
+                        task.shared === true,
+
                     done:
                         task.done === true
 
@@ -120,7 +126,9 @@ function saveDayToHistory(
     };
 
 
-    saveHistory(history);
+    saveHistory(
+        history
+    );
 }
 
 
@@ -133,18 +141,45 @@ function createDiaryCatSwitcher() {
     const cats =
         getCats();
 
+
     if (!cats.length) {
         return "";
     }
 
 
-    const activeId =
+    const selected =
+        diarySelectedCatId ||
         getActiveCatId();
 
 
     return `
 
         <div class="diary-cat-switcher">
+
+            <button
+                class="
+                    diary-cat-button
+                    ${
+                        selected === "all"
+                            ? "active"
+                            : ""
+                    }
+                "
+                onclick="
+                    switchDiaryCat('all')
+                "
+            >
+
+                <span>
+                    🐾
+                </span>
+
+                <span>
+                    Все кошки
+                </span>
+
+            </button>
+
 
             ${
                 cats
@@ -155,7 +190,7 @@ function createDiaryCatSwitcher() {
                                 class="
                                     diary-cat-button
                                     ${
-                                        cat.id === activeId
+                                        selected === cat.id
                                             ? "active"
                                             : ""
                                     }
@@ -194,7 +229,20 @@ function createDiaryCatSwitcher() {
 // SWITCH DIARY CAT
 // ========================================
 
-function switchDiaryCat(catId) {
+function switchDiaryCat(
+    catId
+) {
+
+    if (catId === "all") {
+
+        diarySelectedCatId =
+            "all";
+
+        openHistory();
+
+        return;
+    }
+
 
     const cats =
         getCats();
@@ -212,7 +260,14 @@ function switchDiaryCat(catId) {
     }
 
 
-    setActiveCatId(catId);
+    diarySelectedCatId =
+        catId;
+
+
+    setActiveCatId(
+        catId
+    );
+
 
     openHistory();
 }
@@ -230,7 +285,57 @@ function openHistory() {
         );
 
 
+    if (!content) {
+        return;
+    }
+
+
+    const cats =
+        getCats();
+
+
+    if (!cats.length) {
+
+        renderEmptyState();
+
+        return;
+    }
+
+
+    const selected =
+        diarySelectedCatId ||
+        getActiveCatId();
+
+
+    const history =
+        getHistory();
+
+
+    // ====================================
+    // ALL CATS
+    // ====================================
+
+    if (selected === "all") {
+
+        renderAllCatsDiary(
+            content,
+            cats,
+            history
+        );
+
+        return;
+    }
+
+
+    // ====================================
+    // SINGLE CAT
+    // ====================================
+
     const cat =
+        cats.find(
+            item =>
+                item.id === selected
+        ) ||
         getActiveCat();
 
 
@@ -259,13 +364,13 @@ function openHistory() {
     );
 
 
-    const history =
+    const updatedHistory =
         getHistory();
 
 
     const catHistory =
         getCatHistory(
-            history,
+            updatedHistory,
             cat.id
         );
 
@@ -285,6 +390,12 @@ function openHistory() {
             currentTasks,
             catHistory,
             currentMonth
+        );
+
+
+    const hasEntries =
+        hasDiaryEntries(
+            catHistory
         );
 
 
@@ -311,15 +422,20 @@ function openHistory() {
 
 
         <div class="diary-subtitle">
-            План и история ухода за
+
+            История ухода за
             <strong>
-                ${escapeHtml(cat.name)}
+                ${escapeHtml(
+                    cat.name
+                )}
             </strong>
+
         </div>
 
 
         ${
-            statisticTasks.length
+            statisticTasks.length ||
+            hasEntries
 
                 ? statisticTasks
                     .map(
@@ -346,8 +462,9 @@ function openHistory() {
                         </h2>
 
                         <p>
-                            Отмечайте выполненные
-                            задачи — они появятся здесь.
+                            Отмечайте выполненные задачи —
+                            <br>
+                            они появятся здесь.
                         </p>
 
                     </div>
@@ -370,6 +487,133 @@ function openHistory() {
 
 
 // ========================================
+// ALL CATS DIARY
+// ========================================
+
+function renderAllCatsDiary(
+    content,
+    cats,
+    history
+) {
+
+    const today =
+        getTodayKey();
+
+
+    const currentMonth =
+        today.slice(0, 7);
+
+
+    const previousMonth =
+        getPreviousMonth(
+            currentMonth
+        );
+
+
+    const allTasks =
+        getAllCatsStatisticTasks(
+            cats,
+            history,
+            currentMonth
+        );
+
+
+    const hasEntries =
+        cats.some(
+            cat =>
+                hasDiaryEntries(
+                    getCatHistory(
+                        history,
+                        cat.id
+                    )
+                )
+        );
+
+
+    content.innerHTML = `
+
+        <div class="history-header">
+
+            <button
+                class="back-button"
+                onclick="renderApp()"
+            >
+                ← Назад
+            </button>
+
+
+            <h1>
+                Дневник
+            </h1>
+
+        </div>
+
+
+        ${createDiaryCatSwitcher()}
+
+
+        <div class="diary-subtitle">
+
+            Общая картина ухода за всеми кошками
+
+        </div>
+
+
+        ${
+            allTasks.length ||
+            hasEntries
+
+                ? allTasks
+                    .map(
+                        item =>
+                            createAllCatsStatisticCard(
+                                item,
+                                history,
+                                currentMonth,
+                                previousMonth
+                            )
+                    )
+                    .join("")
+
+                : `
+
+                    <div class="card history-empty">
+
+                        <div class="empty-icon">
+                            📋
+                        </div>
+
+                        <h2>
+                            Дневник пока пуст
+                        </h2>
+
+                        <p>
+                            Отмечайте выполненные задачи —
+                            <br>
+                            они появятся здесь.
+                        </p>
+
+                    </div>
+
+                  `
+        }
+
+
+        <div class="section-title">
+            Последние 7 дней
+        </div>
+
+
+        ${createAllCatsLastSevenDays(
+            cats,
+            history
+        )}
+
+    `;
+}
+
+
+// ========================================
 // GET CAT HISTORY
 // ========================================
 
@@ -383,12 +627,6 @@ function getCatHistory(
     }
 
 
-    /*
-     * Новый формат:
-     *
-     * history[catId][date]
-     */
-
     if (
         history[catId] &&
         typeof history[catId] === "object"
@@ -399,14 +637,7 @@ function getCatHistory(
     }
 
 
-    /*
-     * Старый формат:
-     *
-     * history[date]
-     *
-     * Используем его только для
-     * активной кошки.
-     */
+    // Старый формат.
 
     const dates =
         Object.keys(history);
@@ -457,7 +688,9 @@ function getStatisticTasks(
         }
 
 
-        knownIds.add(task.id);
+        knownIds.add(
+            task.id
+        );
 
 
         const count =
@@ -470,7 +703,9 @@ function getStatisticTasks(
 
         if (count > 0) {
 
-            result.push(task);
+            result.push(
+                task
+            );
 
         }
 
@@ -488,7 +723,9 @@ function getStatisticTasks(
             tasks.forEach(task => {
 
                 if (
-                    knownIds.has(task.id)
+                    knownIds.has(
+                        task.id
+                    )
                 ) {
                     return;
                 }
@@ -512,7 +749,9 @@ function getStatisticTasks(
 
                 if (count > 0) {
 
-                    result.push(task);
+                    result.push(
+                        task
+                    );
 
                     knownIds.add(
                         task.id
@@ -526,6 +765,216 @@ function getStatisticTasks(
 
 
     return result;
+}
+
+
+// ========================================
+// ALL CATS STATISTIC TASKS
+// ========================================
+
+function getAllCatsStatisticTasks(
+    cats,
+    history,
+    currentMonth
+) {
+
+    const result = [];
+
+    const knownIds =
+        new Set();
+
+
+    cats.forEach(
+        cat => {
+
+            const catHistory =
+                getCatHistory(
+                    history,
+                    cat.id
+                );
+
+
+            const tasks =
+                getTasksForHistory(
+                    catHistory
+                );
+
+
+            tasks.forEach(task => {
+
+                if (
+                    task.statistics ===
+                    "none"
+                ) {
+                    return;
+                }
+
+
+                if (
+                    knownIds.has(
+                        task.id
+                    )
+                ) {
+                    return;
+                }
+
+
+                const total =
+                    countTaskAcrossCats(
+                        cats,
+                        history,
+                        currentMonth,
+                        task.id,
+                        task.shared === true
+                    );
+
+
+                if (total > 0) {
+
+                    result.push(
+                        task
+                    );
+
+                    knownIds.add(
+                        task.id
+                    );
+
+                }
+
+            });
+
+        }
+    );
+
+
+    return result;
+}
+
+
+// ========================================
+// GET TASKS FROM HISTORY
+// ========================================
+
+function getTasksForHistory(
+    history
+) {
+
+    const result = [];
+
+    const ids =
+        new Set();
+
+
+    Object.keys(history)
+        .forEach(date => {
+
+            const tasks =
+                history[date]?.tasks ||
+                [];
+
+
+            tasks.forEach(task => {
+
+                if (
+                    ids.has(task.id)
+                ) {
+                    return;
+                }
+
+
+                ids.add(
+                    task.id
+                );
+
+
+                result.push(
+                    task
+                );
+
+            });
+
+        });
+
+
+    return result;
+}
+
+
+// ========================================
+// ALL CATS COUNT
+// ========================================
+
+function countTaskAcrossCats(
+    cats,
+    history,
+    month,
+    taskId,
+    shared
+) {
+
+    // Общая задача считается один раз.
+    if (shared) {
+
+        for (
+            const cat of cats
+        ) {
+
+            const catHistory =
+                getCatHistory(
+                    history,
+                    cat.id
+                );
+
+
+            const count =
+                countTaskForMonth(
+                    catHistory,
+                    month,
+                    taskId
+                );
+
+
+            if (count > 0) {
+
+                return count;
+
+            }
+
+        }
+
+
+        return 0;
+    }
+
+
+    // Индивидуальная задача —
+    // складываем по кошкам.
+
+    let total = 0;
+
+
+    cats.forEach(
+        cat => {
+
+            const catHistory =
+                getCatHistory(
+                    history,
+                    cat.id
+                );
+
+
+            total +=
+                countTaskForMonth(
+                    catHistory,
+                    month,
+                    taskId
+                );
+
+        }
+    );
+
+
+    return total;
 }
 
 
@@ -617,7 +1066,10 @@ function createStatisticCard(
     } else if (isSessions) {
 
         caption =
-            `игровые сессии в ${monthName}`;
+            getSessionsCaption(
+                currentCount,
+                monthName
+            );
 
     }
 
@@ -691,7 +1143,9 @@ function createStatisticCard(
 
 
                             <div
-                                class="history-progress"
+                                class="
+                                    history-progress
+                                "
                             >
 
                                 <div
@@ -718,6 +1172,7 @@ function createStatisticCard(
                                 target
 
                                     ? `
+
                                         <div
                                             class="
                                                 goal-message
@@ -725,6 +1180,7 @@ function createStatisticCard(
                                         >
                                             ✓ Цель достигнута
                                         </div>
+
                                       `
 
                                     : ""
@@ -774,6 +1230,7 @@ function createStatisticCard(
 
                                     ${
                                         isMonthly
+
                                             ? (
                                                 previousCount >=
                                                 (
@@ -784,11 +1241,16 @@ function createStatisticCard(
                                                         task.id
                                                     )
                                                 )
+
                                                     ? "цель достигнута"
+
                                                     : `выполнено в ${previousMonthName}`
                                             )
 
-                                            : `игровые сессии в ${previousMonthName}`
+                                            : getSessionsCaption(
+                                                previousCount,
+                                                previousMonthName
+                                            )
 
                                     }
 
@@ -807,6 +1269,252 @@ function createStatisticCard(
         </div>
 
     `;
+}
+
+
+// ========================================
+// ALL CATS STATISTIC CARD
+// ========================================
+
+function createAllCatsStatisticCard(
+    task,
+    history,
+    currentMonth,
+    previousMonth
+) {
+
+    const cats =
+        getCats();
+
+
+    const currentCount =
+        countTaskAcrossCats(
+            cats,
+            history,
+            currentMonth,
+            task.id,
+            task.shared === true
+        );
+
+
+    const previousCount =
+        countTaskAcrossCats(
+            cats,
+            history,
+            previousMonth,
+            task.id,
+            task.shared === true
+        );
+
+
+    const monthName =
+        getMonthPrepositional(
+            currentMonth
+        );
+
+
+    const previousMonthName =
+        getMonthPrepositional(
+            previousMonth
+        );
+
+
+    const isMonthly =
+        task.statistics ===
+        "monthly";
+
+
+    const isSessions =
+        task.statistics ===
+        "sessions";
+
+
+    let caption = "";
+
+
+    if (isMonthly) {
+
+        caption =
+            `выполнено в ${monthName}`;
+
+    } else if (isSessions) {
+
+        caption =
+            getSessionsCaption(
+                currentCount,
+                monthName
+            );
+
+    }
+
+
+    return `
+
+        <div class="card statistic-card">
+
+            <div class="statistic-top">
+
+                <div class="statistic-icon">
+                    ${task.icon}
+                </div>
+
+
+                <div class="statistic-title">
+
+                    <h2>
+                        ${escapeHtml(
+                            task.name
+                        )}
+                    </h2>
+
+
+                    <span>
+                        ${escapeHtml(
+                            task.description
+                        )}
+                    </span>
+
+
+                    ${
+                        task.shared
+                            ? `
+                                <small class="statistic-shared-label">
+                                    Общее для всех кошек
+                                </small>
+                              `
+                            : ""
+                    }
+
+                </div>
+
+            </div>
+
+
+            <div class="statistic-main">
+
+                <div class="statistic-number">
+                    ${currentCount}
+                </div>
+
+
+                <div class="statistic-caption">
+                    ${caption}
+                </div>
+
+            </div>
+
+
+            ${
+                previousCount > 0
+
+                    ? `
+
+                        <div
+                            class="
+                                previous-result
+                            "
+                        >
+
+                            <div
+                                class="
+                                    previous-result-label
+                                "
+                            >
+                                Прошлый месяц
+                            </div>
+
+
+                            <div
+                                class="
+                                    previous-result-content
+                                "
+                            >
+
+                                <strong>
+                                    ${previousCount}
+                                </strong>
+
+
+                                <span>
+
+                                    ${
+                                        isSessions
+                                            ? getSessionsCaption(
+                                                previousCount,
+                                                previousMonthName
+                                            )
+
+                                            : `выполнено в ${previousMonthName}`
+                                    }
+
+                                </span>
+
+                            </div>
+
+                        </div>
+
+                      `
+
+                    : ""
+
+            }
+
+        </div>
+
+    `;
+}
+
+
+// ========================================
+// SESSIONS CAPTION
+// ========================================
+
+function getSessionsCaption(
+    count,
+    monthName
+) {
+
+    let word;
+
+    const n =
+        Math.abs(count) % 100;
+
+    const last =
+        n % 10;
+
+
+    if (
+        n >= 11 &&
+        n <= 19
+    ) {
+
+        word =
+            "игровых сессий";
+
+    } else if (
+        last === 1
+    ) {
+
+        word =
+            "игровая сессия";
+
+    } else if (
+        last >= 2 &&
+        last <= 4
+    ) {
+
+        word =
+            "игровые сессии";
+
+    } else {
+
+        word =
+            "игровых сессий";
+
+    }
+
+
+    return `${word} в ${monthName}`;
 }
 
 
@@ -939,7 +1647,10 @@ function getPreviousMonth(
 
         String(
             date.getMonth() + 1
-        ).padStart(2, "0")
+        ).padStart(
+            2,
+            "0"
+        )
 
     ].join("-");
 }
@@ -1063,6 +1774,180 @@ function createLastSevenDays(
 
 
 // ========================================
+// ALL CATS LAST 7 DAYS
+// ========================================
+
+function createAllCatsLastSevenDays(
+    cats,
+    history
+) {
+
+    const result = [];
+
+    const today =
+        new Date();
+
+
+    for (
+        let i = 0;
+        i < 7;
+        i++
+    ) {
+
+        const date =
+            new Date(today);
+
+
+        date.setDate(
+            today.getDate() - i
+        );
+
+
+        const key =
+            formatDateKey(date);
+
+
+        const merged =
+            mergeHistoryForDate(
+                cats,
+                history,
+                key
+            );
+
+
+        if (
+            merged.tasks.length
+        ) {
+
+            result.push(
+                createHistoryDay(
+                    key,
+                    merged
+                )
+            );
+
+        }
+
+    }
+
+
+    if (!result.length) {
+
+        return `
+
+            <div class="card history-empty">
+
+                <p>
+                    Отмеченные задачи появятся здесь.
+                </p>
+
+            </div>
+
+        `;
+
+    }
+
+
+    return result.join("");
+}
+
+
+// ========================================
+// MERGE ONE DAY FOR ALL CATS
+// ========================================
+
+function mergeHistoryForDate(
+    cats,
+    history,
+    date
+) {
+
+    const tasks = [];
+
+    const seenShared =
+        new Set();
+
+
+    cats.forEach(
+        cat => {
+
+            const catHistory =
+                getCatHistory(
+                    history,
+                    cat.id
+                );
+
+
+            const day =
+                catHistory[date];
+
+
+            if (!day) {
+                return;
+            }
+
+
+            const dayTasks =
+                day.tasks || [];
+
+
+            dayTasks.forEach(
+                task => {
+
+                    // Общую задачу показываем
+                    // только один раз.
+
+                    if (
+                        task.shared === true
+                    ) {
+
+                        if (
+                            seenShared.has(
+                                task.id
+                            )
+                        ) {
+
+                            return;
+
+                        }
+
+
+                        seenShared.add(
+                            task.id
+                        );
+
+
+                        tasks.push({
+                            ...task
+                        });
+
+                        return;
+                    }
+
+
+                    // Индивидуальная задача
+                    // сохраняется отдельно.
+
+                    tasks.push({
+                        ...task,
+                        catName:
+                            cat.name
+                    });
+
+                }
+            );
+
+        }
+    );
+
+
+    return {
+        tasks
+    };
+}
+
+
+// ========================================
 // HISTORY DAY
 // ========================================
 
@@ -1148,9 +2033,23 @@ function createHistoryDay(
 
 
                                     <span>
+
                                         ${escapeHtml(
                                             task.name
                                         )}
+
+                                        ${
+                                            task.catName
+                                                ? `
+                                                    <small class="history-cat-name">
+                                                        ${escapeHtml(
+                                                            task.catName
+                                                        )}
+                                                    </small>
+                                                  `
+                                                : ""
+                                        }
+
                                     </span>
 
 
@@ -1209,7 +2108,79 @@ function deleteCatHistory(
 
         delete history[catId];
 
-        saveHistory(history);
+        saveHistory(
+            history
+        );
 
     }
+}
+
+
+// ========================================
+// HAS DIARY ENTRIES
+// ========================================
+
+function hasDiaryEntries(
+    history
+) {
+
+    if (!history) {
+        return false;
+    }
+
+
+    return Object.keys(history).some(
+        date => {
+
+            const tasks =
+                history[date]?.tasks ||
+                [];
+
+
+            return tasks.some(
+                task =>
+                    task.done === true
+            );
+
+        }
+    );
+
+}
+
+
+// ========================================
+// DATE HELPERS
+// ========================================
+
+function getTodayKey() {
+
+    return formatDateKey(
+        new Date()
+    );
+}
+
+
+function formatDateKey(
+    date
+) {
+
+    return [
+
+        date.getFullYear(),
+
+        String(
+            date.getMonth() + 1
+        ).padStart(
+            2,
+            "0"
+        ),
+
+        String(
+            date.getDate()
+        ).padStart(
+            2,
+            "0"
+        )
+
+    ].join("-");
 }

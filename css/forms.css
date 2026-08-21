@@ -461,3 +461,55 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .delete-profile-button:hover {
     color: #555;
 }
+/* ========================================
+   HIDDEN ELEMENTS
+   ======================================== */
+
+[hidden] {
+    display: none !important;
+}
+
+
+/* ========================================
+   BIRTH DATE
+   ======================================== */
+
+#catBirthDate {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+
+    height: 64px;
+
+    padding: 0 24px;
+
+    font-family: inherit;
+    font-size: 20px;
+    font-weight: 400;
+    line-height: normal;
+
+    text-align: left;
+
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+
+/* ========================================
+   DATE FIELD WRAPPER
+   ======================================== */
+
+#birthDateField {
+    width: 100%;
+}/* ========================================
+   DELETE PROFILE
+======================================== */
+
+.delete-profile-button {
+    margin-top: 10px;
+    margin-bottom: 4px;
+}
+
+.delete-profile-button + .button-secondary {
+    margin-top: 8px;
+}

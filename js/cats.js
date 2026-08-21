@@ -1,5 +1,4 @@
 // ========================================
-// ЖИЗНЬ С КОШКОЙ
 // CATS
 // ========================================
 
@@ -62,14 +61,6 @@ function getActiveCatId() {
 
 function setActiveCatId(id) {
 
-    if (!id) {
-        localStorage.removeItem(
-            ACTIVE_CAT_KEY
-        );
-
-        return;
-    }
-
     localStorage.setItem(
         ACTIVE_CAT_KEY,
         id
@@ -79,8 +70,7 @@ function setActiveCatId(id) {
 
 function getActiveCat() {
 
-    const cats =
-        getCats();
+    const cats = getCats();
 
     if (!cats.length) {
         return null;
@@ -150,7 +140,6 @@ function migrateOldCat() {
             JSON.parse(oldCat);
 
         const migratedCat = {
-
             ...cat,
 
             id:
@@ -160,7 +149,6 @@ function migrateOldCat() {
             createdAt:
                 cat.createdAt ||
                 new Date().toISOString()
-
         };
 
         saveCats([
@@ -180,7 +168,38 @@ function migrateOldCat() {
 
 
 // ========================================
-// MODAL — ADD NEW CAT
+// DELETE BUTTON VISIBILITY
+// ========================================
+
+function setDeleteButtonVisible(visible) {
+
+    const deleteButton =
+        document.getElementById(
+            "deleteProfileButton"
+        );
+
+    if (!deleteButton) {
+        return;
+    }
+
+    if (visible) {
+
+        deleteButton.hidden = false;
+        deleteButton.removeAttribute("hidden");
+
+    } else {
+
+        deleteButton.hidden = true;
+        deleteButton.setAttribute(
+            "hidden",
+            ""
+        );
+    }
+}
+
+
+// ========================================
+// MODAL — NEW CAT
 // ========================================
 
 function openModal() {
@@ -192,22 +211,12 @@ function openModal() {
         return;
     }
 
-    /*
-     * Новая кошка.
-     * Ничего из текущего профиля
-     * в форму не переносим.
-     */
-
+    // Очень важно:
+    // новая кошка = не редактирование
     editingCatId = null;
 
-    const deleteButton =
-        document.getElementById(
-            "deleteProfileButton"
-        );
-
-    if (deleteButton) {
-        deleteButton.hidden = true;
-    }
+    // При создании профиля кнопки удаления быть НЕ должно.
+    setDeleteButtonVisible(false);
 
     resetForm();
 
@@ -256,6 +265,10 @@ function closeModal() {
     editingCatId = null;
 
     resetForm();
+
+    // После закрытия снова гарантируем
+    // состояние "создание новой кошки".
+    setDeleteButtonVisible(false);
 }
 
 
@@ -306,7 +319,7 @@ function resetForm() {
 
 
 // ========================================
-// SHOW AGE INPUT
+// AGE INPUT
 // ========================================
 
 function showAgeInput() {
@@ -350,7 +363,7 @@ function showAgeInput() {
 
 
 // ========================================
-// SHOW BIRTH DATE INPUT
+// BIRTH DATE INPUT
 // ========================================
 
 function showBirthDateInput() {
@@ -390,58 +403,32 @@ function showBirthDateInput() {
 
 function saveCat() {
 
-    const nameInput =
-        document.getElementById(
-            "catName"
-        );
+    const name =
+        document
+            .getElementById("catName")
+            .value
+            .trim();
 
-    const birthDateInput =
+    const birthDate =
         document.getElementById(
             "catBirthDate"
-        );
+        ).value;
 
-    const ageValueInput =
+    const ageValue =
         document.getElementById(
             "catAgeValue"
-        );
+        ).value;
 
-    const ageUnitInput =
+    const ageUnit =
         document.getElementById(
             "catAgeUnit"
-        );
+        ).value;
 
     const ageField =
         document.getElementById(
             "ageField"
         );
 
-    if (
-        !nameInput ||
-        !birthDateInput ||
-        !ageValueInput ||
-        !ageUnitInput ||
-        !ageField
-    ) {
-        return;
-    }
-
-
-    const name =
-        nameInput.value.trim();
-
-    const birthDate =
-        birthDateInput.value;
-
-    const ageValue =
-        ageValueInput.value;
-
-    const ageUnit =
-        ageUnitInput.value;
-
-
-    // ------------------------------------
-    // VALIDATION
-    // ------------------------------------
 
     if (!name) {
 
@@ -479,12 +466,9 @@ function saveCat() {
     }
 
 
-    // ------------------------------------
-    // FIND EXISTING
-    // ------------------------------------
-
     const cats =
         getCats();
+
 
     const existingCat =
         editingCatId
@@ -495,10 +479,6 @@ function saveCat() {
             )
             : null;
 
-
-    // ------------------------------------
-    // CREATE OBJECT
-    // ------------------------------------
 
     const cat = {
 
@@ -530,10 +510,6 @@ function saveCat() {
     };
 
 
-    // ------------------------------------
-    // SAVE
-    // ------------------------------------
-
     const index =
         cats.findIndex(
             item =>
@@ -543,8 +519,7 @@ function saveCat() {
 
     if (index >= 0) {
 
-        cats[index] =
-            cat;
+        cats[index] = cat;
 
     } else {
 
@@ -555,14 +530,7 @@ function saveCat() {
 
     saveCats(cats);
 
-    /*
-     * После создания или редактирования
-     * эта кошка становится активной.
-     */
-
-    setActiveCatId(
-        cat.id
-    );
+    setActiveCatId(cat.id);
 
     editingCatId = null;
 
@@ -591,10 +559,6 @@ function openModalWithCurrentCat() {
     const cat =
         getActiveCat();
 
-
-    // Если кошки нет —
-    // открываем форму новой кошки.
-
     if (!cat) {
 
         openModal();
@@ -603,27 +567,12 @@ function openModalWithCurrentCat() {
     }
 
 
-    editingCatId =
-        cat.id;
+    editingCatId = cat.id;
 
+    // В режиме редактирования
+    // кнопка удаления разрешена.
+    setDeleteButtonVisible(true);
 
-    // ------------------------------------
-    // DELETE BUTTON
-    // ------------------------------------
-
-    const deleteButton =
-        document.getElementById(
-            "deleteProfileButton"
-        );
-
-    if (deleteButton) {
-        deleteButton.hidden = false;
-    }
-
-
-    // ------------------------------------
-    // NAME
-    // ------------------------------------
 
     const nameInput =
         document.getElementById(
@@ -637,10 +586,6 @@ function openModalWithCurrentCat() {
 
     }
 
-
-    // ------------------------------------
-    // AGE / BIRTH DATE
-    // ------------------------------------
 
     if (cat.birthDate) {
 
@@ -662,39 +607,33 @@ function openModalWithCurrentCat() {
 
         showAgeInput();
 
-        const ageValueInput =
+        const ageInput =
             document.getElementById(
                 "catAgeValue"
             );
 
-        const ageUnitInput =
+        const unitInput =
             document.getElementById(
                 "catAgeUnit"
             );
 
 
-        if (ageValueInput) {
+        if (ageInput) {
 
-            ageValueInput.value =
-                cat.ageValue ?? "";
-
-        }
-
-
-        if (ageUnitInput) {
-
-            ageUnitInput.value =
-                cat.ageUnit ||
-                "years";
+            ageInput.value =
+                cat.ageValue || "";
 
         }
 
+
+        if (unitInput) {
+
+            unitInput.value =
+                cat.ageUnit || "years";
+
+        }
     }
 
-
-    // ------------------------------------
-    // OPEN MODAL
-    // ------------------------------------
 
     const modal =
         document.getElementById(
@@ -706,15 +645,12 @@ function openModalWithCurrentCat() {
     }
 
 
-    modal.classList.add(
-        "active"
-    );
+    modal.classList.add("active");
 
     modal.setAttribute(
         "aria-hidden",
         "false"
     );
-
 }
 
 
@@ -736,26 +672,18 @@ function deleteCurrentCat() {
         getCats();
 
 
-    const message =
-        cats.length === 1
-
-            ? `Удалить профиль ${cat.name}? После удаления кошек в приложении не останется.`
-
-            : `Удалить профиль ${cat.name}?`;
-
-
     const confirmed =
-        confirm(message);
+        confirm(
+            cats.length === 1
+                ? `Удалить профиль ${cat.name}? После удаления кошек в приложении не останется.`
+                : `Удалить профиль ${cat.name}?`
+        );
 
 
     if (!confirmed) {
         return;
     }
 
-
-    // ------------------------------------
-    // REMOVE CAT
-    // ------------------------------------
 
     const updatedCats =
         cats.filter(
@@ -764,42 +692,13 @@ function deleteCurrentCat() {
         );
 
 
-    saveCats(
-        updatedCats
-    );
+    saveCats(updatedCats);
 
 
-    // ------------------------------------
-    // REMOVE CAT DATA
-    // ------------------------------------
+    // Удаляем данные только удалённой кошки.
+    deleteCatTasks(cat.id);
+    deleteCatHistory(cat.id);
 
-    if (
-        typeof deleteCatTasks ===
-        "function"
-    ) {
-
-        deleteCatTasks(
-            cat.id
-        );
-
-    }
-
-
-    if (
-        typeof deleteCatHistory ===
-        "function"
-    ) {
-
-        deleteCatHistory(
-            cat.id
-        );
-
-    }
-
-
-    // ------------------------------------
-    // SELECT NEXT CAT
-    // ------------------------------------
 
     if (updatedCats.length) {
 
@@ -809,16 +708,12 @@ function deleteCurrentCat() {
 
     } else {
 
-        setActiveCatId(
-            null
+        localStorage.removeItem(
+            ACTIVE_CAT_KEY
         );
 
     }
 
-
-    // ------------------------------------
-    // CLOSE
-    // ------------------------------------
 
     closeModal();
 
@@ -889,7 +784,6 @@ function createCatSwitcher() {
                             cat => `
 
                                 <button
-                                    type="button"
                                     class="
                                         cat-switcher-item
                                         ${
@@ -930,7 +824,6 @@ function createCatSwitcher() {
 
 
             <button
-                type="button"
                 class="add-cat-button"
                 onclick="addNewCat()"
             >
