@@ -3,11 +3,6 @@
 // APP.JS
 // Запуск и отображение приложения
 // ========================================
-// ========================================
-// ЖИЗНЬ С КОШКОЙ
-// MVP 0.8.2
-// ========================================
-
 
 // ========================================
 // START
@@ -214,67 +209,6 @@ function renderCatDashboard(
         >
             Изменить профиль
         </button>
-
-    `;
-}
-
-
-// ========================================
-// TASK UI
-// ========================================
-
-function createTask(
-    task
-) {
-
-    return `
-
-        <div class="task">
-
-            <div class="task-icon">
-                ${task.icon}
-            </div>
-
-
-            <div class="task-text">
-
-                <div class="task-name">
-                    ${escapeHtml(
-                        task.name
-                    )}
-                </div>
-
-
-                <div class="task-time">
-                    ${escapeHtml(
-                        task.description
-                    )}
-                </div>
-
-            </div>
-
-
-            <div
-                class="
-                    check
-                    ${
-                        task.done
-                            ? "done"
-                            : ""
-                    }
-                "
-                onclick="
-                    toggleTask(
-                        '${task.id}'
-                    )
-                "
-                role="button"
-                aria-label="
-                    Отметить выполненным
-                "
-            ></div>
-
-        </div>
 
     `;
 }
