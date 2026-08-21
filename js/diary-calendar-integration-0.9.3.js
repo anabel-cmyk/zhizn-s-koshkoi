@@ -1,7 +1,5 @@
-// ========================================
-// 0.9.3 — ДНЕВНИК: ПРОГРЕСС / КАЛЕНДАРЬ
-// Медицинский календарь интегрирован в Дневник.
-// ========================================
+// 0.9.3 — Diary: Progress / Calendar
+// Calendar is integrated into the existing Diary. No MutationObserver loop.
 (function () {
     let mode = "progress";
 
@@ -33,17 +31,7 @@
         if (!content || mode !== "progress") return;
         const header = content.querySelector(".history-header");
         if (!header) return;
-
-        // На Прогрессе выбор кошки ВСЕГДА сразу под заголовком Дневника,
-        // а переключатель подразделов — сразу под выбором кошки.
-        const catSwitchers = [...content.querySelectorAll(".diary-cat-switcher")];
-        const catSwitcher = catSwitchers[0] || null;
-        catSwitchers.slice(1).forEach(el => el.remove());
-
-        if (catSwitcher) {
-            header.insertAdjacentElement("afterend", catSwitcher);
-        }
-
+        const cats = content.querySelector(".diary-cat-switcher");
         let tabs = content.querySelector(".diary-mode-switcher");
         if (!tabs) {
             const holder = document.createElement("div");
@@ -53,10 +41,12 @@
             tabs.outerHTML = switcher();
             tabs = content.querySelector(".diary-mode-switcher");
         }
-
-        const freshCatSwitcher = content.querySelector(".diary-cat-switcher");
-        if (freshCatSwitcher) freshCatSwitcher.insertAdjacentElement("afterend", tabs);
-        else header.insertAdjacentElement("afterend", tabs);
+        if (cats) {
+            header.insertAdjacentElement("afterend", cats);
+            cats.insertAdjacentElement("afterend", tabs);
+        } else {
+            header.insertAdjacentElement("afterend", tabs);
+        }
     }
 
     function healthCalendar(cat) {
@@ -89,11 +79,12 @@
 
     window.setDiarySubsection = function (next) {
         mode = next === "calendar" ? "calendar" : "progress";
-        if (mode === "calendar") renderCalendar();
-        else {
-            window.__diarySubsectionRendering = true;
-            if (typeof window.__diaryOriginalOpenHistory === "function") window.__diaryOriginalOpenHistory();
-            window.__diarySubsectionRendering = false;
+        if (mode === "calendar") {
+            renderCalendar();
+            return;
+        }
+        if (typeof window.__diaryOriginalOpenHistory === "function") {
+            window.__diaryOriginalOpenHistory();
             setTimeout(ensureSwitcher, 0);
         }
     };
@@ -161,25 +152,16 @@
     };
 
     const original = window.openHistory;
-    if (!window.__diaryOriginalOpenHistory) window.__diaryOriginalOpenHistory = original;
+    window.__diaryOriginalOpenHistory = original;
     window.openHistory = function () {
         mode = "progress";
         if (typeof window.__diaryOriginalOpenHistory === "function") {
-            window.__diarySubsectionRendering = true;
             window.__diaryOriginalOpenHistory();
-            window.__diarySubsectionRendering = false;
             setTimeout(ensureSwitcher, 0);
         }
     };
 
-    function startObserver() {
-        const content = document.getElementById("content");
-        if (!content) return;
-        const observer = new MutationObserver(() => { if (mode === "progress") ensureSwitcher(); });
-        observer.observe(content, { childList: true, subtree: true });
-        ensureSwitcher();
-    }
-
-    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", startObserver, { once: true });
-    else startObserver();
+    // Если Дневник уже открыт к моменту загрузки файла — просто добавляем вкладки один раз.
+    if (document.readyState !== "loading") setTimeout(ensureSwitcher, 0);
+    else document.addEventListener("DOMContentLoaded", () => setTimeout(ensureSwitcher, 0), { once: true });
 })();
