@@ -1,10 +1,18 @@
 // ========================================
 // 0.9.3 — ДНЕВНИК: ПРОГРЕСС / КАЛЕНДАРЬ
-// Надёжная интеграция: переключатель добавляется
-// непосредственно в DOM существующего Дневника.
+// Медицинский календарь интегрирован в Дневник.
 // ========================================
 (function () {
     let mode = "progress";
+
+    const eventTypes = {
+        vaccination: ["💉", "Вакцинация"],
+        endo: ["🪱", "Эндопаразиты"],
+        ecto: ["🦟", "Эктопаразиты"],
+        dental_cleaning: ["🦷", "Ультразвуковая чистка зубов под наркозом"],
+        medicine: ["💊", "Лечение / лекарство"],
+        other: ["🩺", "Другое"]
+    };
 
     function currentCat() {
         const cats = getCats();
@@ -38,25 +46,16 @@
         const first = new Date(year, month - 1, 1);
         const days = new Date(year, month, 0).getDate();
         const offset = (first.getDay() + 6) % 7;
-        const typeInfo = {
-            vaccination: ["💉", "Вакцинация"],
-            endo: ["🪱", "Эндопаразиты"],
-            ecto: ["🦟", "Эктопаразиты"],
-            parasite: ["🪱", "Обработка от паразитов"],
-            dental: ["🦷", "Ультразвуковая чистка зубов под наркозом"],
-            dental_cleaning: ["🦷", "Ультразвуковая чистка зубов под наркозом"],
-            medicine: ["💊", "Лечение / лекарство"],
-            other: ["🩺", "Другое"]
-        };
-        const info = e => typeInfo[e.type] || [e.emoji || "🩺", e.title || "Медицинское событие"];
         const cells = [];
+
         for (let i = 0; i < offset; i++) cells.push(`<div class="diary-health-day empty"></div>`);
         for (let d = 1; d <= days; d++) {
             const date = `${key}-${String(d).padStart(2, "0")}`;
             const dayEvents = events.filter(e => e.date === date || e.nextDate === date);
-            const emojis = [...new Set(dayEvents.map(e => info(e)[0]))];
+            const emojis = [...new Set(dayEvents.map(e => (e.emoji || eventTypes[e.type]?.[0] || "🩺")))];
             cells.push(`<button type="button" class="diary-health-day ${date === getTodayKey() ? "today" : ""} ${dayEvents.length ? "has-events" : ""}" onclick="window.openDiaryHealthDate('${date}')"><span>${d}</span>${emojis.length ? `<small>${emojis.join("")}</small>` : ""}</button>`);
         }
+
         const monthName = new Intl.DateTimeFormat("ru-RU", { month: "long", year: "numeric" }).format(first);
         return `<div class="card diary-health-calendar">
             <div class="diary-health-calendar-header"><button type="button" onclick="window.shiftDiaryHealthMonth(-1)">‹</button><strong>${escapeHtml(monthName)}</strong><button type="button" onclick="window.shiftDiaryHealthMonth(1)">›</button></div>
@@ -69,14 +68,13 @@
         const content = document.getElementById("content");
         const cat = currentCat();
         if (!content || !cat) return;
-        content.innerHTML = `<div class="history-header"><button class="back-button" onclick="renderApp()">← Назад</button><h1>Дневник</h1></div>${typeof createDiaryCatSwitcher === "function" ? createDiaryCatSwitcher() : ""}${switcher()}<div class="diary-subtitle">Календарь здоровья <strong>${escapeHtml(cat.name)}</strong></div>${healthCalendar(cat)}<button class="button diary-add-health" onclick="openHealthEventForm()">＋ Добавить событие</button>`;
+        content.innerHTML = `<div class="history-header"><button class="back-button" onclick="renderApp()">← Назад</button><h1>Дневник</h1></div>${typeof createDiaryCatSwitcher === "function" ? createDiaryCatSwitcher() : ""}${switcher()}<div class="diary-subtitle">Календарь здоровья <strong>${escapeHtml(cat.name)}</strong></div>${healthCalendar(cat)}<button class="button diary-add-health" onclick="openDiaryHealthEventForm()">＋ Добавить событие</button>`;
     }
 
     window.setDiarySubsection = function (next) {
         mode = next === "calendar" ? "calendar" : "progress";
-        if (mode === "calendar") {
-            renderCalendar();
-        } else {
+        if (mode === "calendar") renderCalendar();
+        else {
             window.__diarySubsectionRendering = true;
             if (typeof window.__diaryOriginalOpenHistory === "function") window.__diaryOriginalOpenHistory();
             window.__diarySubsectionRendering = false;
@@ -101,7 +99,55 @@
         const target = document.getElementById("diaryHealthDateEvents");
         if (!target) return;
         const title = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", year: "numeric" }).format(new Date(`${date}T12:00:00`));
-        target.innerHTML = `<div class="section-title">${escapeHtml(title)}</div>${dayEvents.length ? dayEvents.map(e => `<div class="card health-event-card"><div><strong>${escapeHtml(e.emoji || "🩺")} ${escapeHtml(e.title || "Медицинское событие")}</strong>${e.note ? `<div class="health-event-note">${escapeHtml(e.note)}</div>` : ""}</div><div>${e.nextDate ? `<small>Следующая: ${formatShortDate(e.nextDate)}</small>` : ""}</div></div>`).join("") : `<div class="card health-empty">На этот день медицинских событий нет.</div>`}`;
+        target.innerHTML = `<div class="section-title">${escapeHtml(title)}</div>${dayEvents.length ? dayEvents.map(e => `<div class="card health-event-card" onclick="openDiaryHealthEventForm('${e.id}')"><div><strong>${escapeHtml(e.emoji || eventTypes[e.type]?.[0] || "🩺")} ${escapeHtml(e.title || eventTypes[e.type]?.[1] || "Медицинское событие")}</strong>${e.note ? `<div class="health-event-note">${escapeHtml(e.note)}</div>` : ""}</div><div>${e.nextDate ? `<small>Следующая: ${formatShortDate(e.nextDate)}</small>` : ""}</div></div>`).join("") : `<div class="card health-empty">На этот день медицинских событий нет.</div>`}`;
+    };
+
+    window.openDiaryHealthEventForm = function (eventId = "") {
+        const cat = currentCat();
+        if (!cat) return;
+        const health = getCatHealth(cat.id);
+        const existing = (health.medicalEvents || []).find(e => e.id === eventId);
+        document.getElementById("diaryHealthEventModal")?.remove();
+        const modal = document.createElement("div");
+        modal.id = "diaryHealthEventModal";
+        modal.className = "health-event-modal active";
+        const emoji = existing?.emoji || eventTypes[existing?.type]?.[0] || "💉";
+        modal.innerHTML = `<div class="health-event-overlay" onclick="this.parentElement.remove()"></div><div class="health-event-dialog"><button class="health-event-close" onclick="this.closest('.health-event-modal').remove()">×</button><h2>${existing ? "Медицинское событие" : "Новое событие"}</h2>
+            <div class="form-field"><label class="form-label">Тип</label><select id="diaryHealthType" class="input">${Object.entries(eventTypes).map(([value,[icon,label]]) => `<option value="${value}" ${existing?.type === value ? "selected" : ""}>${icon} ${label}</option>`).join("")}</select></div>
+            <div class="form-field"><label class="form-label">Эмодзи</label><select id="diaryHealthEmoji" class="input"><option value="💉" ${emoji==="💉"?"selected":""}>💉</option><option value="🪱" ${emoji==="🪱"?"selected":""}>🪱</option><option value="🦟" ${emoji==="🦟"?"selected":""}>🦟</option><option value="🦷" ${emoji==="🦷"?"selected":""}>🦷</option><option value="💊" ${emoji==="💊"?"selected":""}>💊</option><option value="🩺" ${emoji==="🩺"?"selected":""}>🩺</option><option value="❤️" ${emoji==="❤️"?"selected":""}>❤️</option><option value="⭐" ${emoji==="⭐"?"selected":""}>⭐</option></select></div>
+            <div class="form-field"><label class="form-label">Дата события</label><input id="diaryHealthDate" class="input" type="date" required value="${existing?.date || ""}"></div>
+            <div class="form-field"><label class="form-label">Следующая дата</label><input id="diaryHealthNextDate" class="input" type="date" value="${existing?.nextDate || ""}"></div>
+            <div class="form-field"><label class="form-label">Напомнить заранее</label><select id="diaryHealthReminder" class="input">${[1,3,7,14,30].map(days => `<option value="${days}" ${Number(existing?.reminderDays || 14)===days?"selected":""}>За ${days} ${days===1?"день":"дней"}</option>`).join("")}</select></div>
+            <div class="form-field"><label class="form-label">Комментарий</label><input id="diaryHealthNote" class="input" type="text" value="${escapeHtml(existing?.note || "")}"></div>
+            <button class="button" onclick="saveDiaryHealthEvent('${eventId}')">Сохранить</button>${existing ? `<button class="button button-secondary" onclick="deleteDiaryHealthEvent('${eventId}')">Удалить</button>` : ""}
+        </div>`;
+        document.body.appendChild(modal);
+    };
+
+    window.saveDiaryHealthEvent = function (eventId) {
+        const cat = currentCat();
+        if (!cat) return;
+        const health = getCatHealth(cat.id);
+        const type = document.getElementById("diaryHealthType")?.value || "other";
+        const date = document.getElementById("diaryHealthDate")?.value;
+        if (!date) { alert("Укажите дату события"); return; }
+        const item = { id: eventId || `health_${Date.now()}_${Math.random().toString(36).slice(2,7)}`, type, title: eventTypes[type]?.[1] || "Медицинское событие", emoji: document.getElementById("diaryHealthEmoji")?.value || eventTypes[type]?.[0] || "🩺", date, nextDate: document.getElementById("diaryHealthNextDate")?.value || "", reminderDays: Number(document.getElementById("diaryHealthReminder")?.value || 14), note: document.getElementById("diaryHealthNote")?.value?.trim() || "" };
+        const index = (health.medicalEvents || []).findIndex(e => e.id === item.id);
+        if (index >= 0) health.medicalEvents[index] = item; else health.medicalEvents.push(item);
+        saveCatHealth(cat.id, health);
+        document.getElementById("diaryHealthEventModal")?.remove();
+        window.diaryHealthMonth = item.nextDate?.slice(0,7) || item.date.slice(0,7);
+        renderCalendar();
+    };
+
+    window.deleteDiaryHealthEvent = function (eventId) {
+        const cat = currentCat();
+        if (!cat) return;
+        const health = getCatHealth(cat.id);
+        health.medicalEvents = (health.medicalEvents || []).filter(e => e.id !== eventId);
+        saveCatHealth(cat.id, health);
+        document.getElementById("diaryHealthEventModal")?.remove();
+        renderCalendar();
     };
 
     // Сохраняем исходный Дневник и перехватываем только его открытие.
@@ -117,21 +163,14 @@
         }
     };
 
-    // MutationObserver нужен потому, что существующий diary.js полностью
-    // перерисовывает #content через innerHTML.
     function startObserver() {
         const content = document.getElementById("content");
         if (!content) return;
-        const observer = new MutationObserver(() => {
-            if (mode === "progress") ensureSwitcher();
-        });
+        const observer = new MutationObserver(() => { if (mode === "progress") ensureSwitcher(); });
         observer.observe(content, { childList: true, subtree: true });
         ensureSwitcher();
     }
 
-    if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", startObserver, { once: true });
-    } else {
-        startObserver();
-    }
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", startObserver, { once: true });
+    else startObserver();
 })();
