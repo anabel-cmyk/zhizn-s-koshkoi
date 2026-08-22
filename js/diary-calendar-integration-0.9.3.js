@@ -164,4 +164,53 @@
     // Если Дневник уже открыт к моменту загрузки файла — просто добавляем вкладки один раз.
     if (document.readyState !== "loading") setTimeout(ensureSwitcher, 0);
     else document.addEventListener("DOMContentLoaded", () => setTimeout(ensureSwitcher, 0), { once: true });
+
+    // 0.9.3.10 — only in Diary > Progress: yesterday is labeled "Вчера".
+    // Calendar dates remain ordinary dates.
+    const originalCreateHistoryDay = window.createHistoryDay;
+    window.createHistoryDay = function (date, dayData) {
+        if (date === getTodayKey()) {
+            return originalCreateHistoryDay(date, dayData);
+        }
+
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(today.getDate() - 1);
+        const yesterdayKey = typeof formatDateKey === "function"
+            ? formatDateKey(yesterday)
+            : `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, "0")}-${String(yesterday.getDate()).padStart(2, "0")}`;
+
+        if (date !== yesterdayKey) {
+            return originalCreateHistoryDay(date, dayData);
+        }
+
+        const tasks = dayData?.tasks || [];
+        const completed = tasks.filter(task => task.done).length;
+        const total = tasks.length;
+
+        return `
+            <div class="card history-day">
+                <div class="history-day-top">
+                    <div>
+                        <div class="history-date">Вчера</div>
+                        <div class="history-count">
+                            ${completed} из ${total} задач выполнено
+                        </div>
+                    </div>
+                </div>
+                <div class="history-task-list">
+                    ${tasks.map(task => `
+                        <div class="history-task ${task.done ? "history-task-done" : ""}">
+                            <span>${task.icon || ""}</span>
+                            <span>
+                                ${escapeHtml(task.name)}
+                                ${task.catName ? `<small class="history-cat-name">${escapeHtml(task.catName)}</small>` : ""}
+                            </span>
+                            <span class="history-check">${task.done ? "✓" : "—"}</span>
+                        </div>
+                    `).join("")}
+                </div>
+            </div>
+        `;
+    };
 })();
