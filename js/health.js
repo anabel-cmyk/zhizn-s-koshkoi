@@ -4,6 +4,7 @@
 //
 // health.js owns medical data only.
 // calendar.js reads this data for display and does not store a second copy.
+// Фото и пол кошки принадлежат cats.js; здесь хранится только медицинская часть.
 
 const HEALTH_KEY = "catHealthProfiles";
 
@@ -36,8 +37,6 @@ function getCatHealth(catId) {
     const profile = data[catId];
 
     return {
-        gender: profile?.gender || "",
-        avatar: profile?.avatar || "",
         medicalEvents: Array.isArray(profile?.medicalEvents)
             ? profile.medicalEvents
             : []
@@ -49,8 +48,6 @@ function saveCatHealth(catId, profile) {
 
     const data = getHealthData();
     data[catId] = {
-        gender: profile?.gender || "",
-        avatar: profile?.avatar || "",
         medicalEvents: Array.isArray(profile?.medicalEvents)
             ? profile.medicalEvents
             : []
