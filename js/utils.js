@@ -2,46 +2,12 @@
 // ЖИЗНЬ С КОШКОЙ
 // UTILS.JS
 // Общие вспомогательные функции
+// MVP 0.9.4
 // ========================================
 
 
 // ========================================
-// ID
-// ========================================
-
-function createId() {
-
-    return (
-        "id_" +
-        Date.now() +
-        "_" +
-        Math.random()
-            .toString(36)
-            .slice(2, 8)
-    );
-
-}
-
-
-// ========================================
-// HTML SECURITY
-// ========================================
-
-function escapeHtml(value) {
-
-    const div =
-        document.createElement("div");
-
-    div.textContent =
-        value ?? "";
-
-    return div.innerHTML;
-
-}
-
-
-// ========================================
-// DATE KEY
+// DATE
 // ========================================
 
 function getTodayKey() {
@@ -49,7 +15,6 @@ function getTodayKey() {
     return formatDateKey(
         new Date()
     );
-
 }
 
 
@@ -61,19 +26,24 @@ function formatDateKey(date) {
 
         String(
             date.getMonth() + 1
-        ).padStart(2, "0"),
+        ).padStart(
+            2,
+            "0"
+        ),
 
         String(
             date.getDate()
-        ).padStart(2, "0")
+        ).padStart(
+            2,
+            "0"
+        )
 
     ].join("-");
-
 }
 
 
 // ========================================
-// DATE FORMAT
+// DATE DISPLAY
 // ========================================
 
 function formatDate(dateString) {
@@ -101,12 +71,141 @@ function formatDate(dateString) {
             month: "long"
         }
     );
-
 }
 
 
 // ========================================
-// PLURAL
+// CAT AGE
+// ========================================
+
+function getCatAgeText(cat) {
+
+    if (cat.birthDate) {
+
+        const birth =
+            new Date(
+                `${cat.birthDate}T12:00:00`
+            );
+
+        const now =
+            new Date();
+
+
+        let years =
+            now.getFullYear()
+            -
+            birth.getFullYear();
+
+
+        let months =
+            now.getMonth()
+            -
+            birth.getMonth();
+
+
+        if (
+            now.getDate()
+            <
+            birth.getDate()
+        ) {
+
+            months--;
+
+        }
+
+
+        if (months < 0) {
+
+            years--;
+
+            months += 12;
+
+        }
+
+
+        if (years < 1) {
+
+            const totalMonths =
+                Math.max(
+                    0,
+
+                    (
+                        now.getFullYear()
+                        -
+                        birth.getFullYear()
+                    ) * 12
+
+                    +
+
+                    (
+                        now.getMonth()
+                        -
+                        birth.getMonth()
+                    )
+                );
+
+
+            return formatMonths(
+                totalMonths
+            );
+        }
+
+
+        return formatYears(
+            years
+        );
+    }
+
+
+    if (
+        cat.ageValue !== null &&
+        cat.ageValue !== undefined
+    ) {
+
+        if (
+            cat.ageUnit === "months"
+        ) {
+
+            return formatMonths(
+                cat.ageValue
+            );
+        }
+
+
+        return formatYears(
+            cat.ageValue
+        );
+    }
+
+
+    return "Возраст не указан";
+}
+
+
+function formatYears(value) {
+
+    return pluralize(
+        value,
+        "год",
+        "года",
+        "лет"
+    );
+}
+
+
+function formatMonths(value) {
+
+    return pluralize(
+        value,
+        "месяц",
+        "месяца",
+        "месяцев"
+    );
+}
+
+
+// ========================================
+// PLURALIZATION
 // ========================================
 
 function pluralize(
@@ -119,6 +218,7 @@ function pluralize(
     const n =
         Math.abs(number) % 100;
 
+
     const last =
         n % 10;
 
@@ -129,14 +229,14 @@ function pluralize(
     ) {
 
         return `${number} ${many}`;
-
     }
 
 
-    if (last === 1) {
+    if (
+        last === 1
+    ) {
 
         return `${number} ${one}`;
-
     }
 
 
@@ -146,124 +246,28 @@ function pluralize(
     ) {
 
         return `${number} ${few}`;
-
     }
 
 
     return `${number} ${many}`;
-
 }
 
 
 // ========================================
-// AGE TEXT
+// HTML SECURITY
 // ========================================
 
-function formatYears(value) {
+function escapeHtml(value) {
 
-    return pluralize(
-        value,
-        "год",
-        "года",
-        "лет"
-    );
-
-}
-
-
-function formatMonths(value) {
-
-    return pluralize(
-        value,
-        "месяц",
-        "месяца",
-        "месяцев"
-    );
-
-}
-
-
-// ========================================
-// PREVIOUS MONTH
-// ========================================
-
-function getPreviousMonth(monthKey) {
-
-    const [
-        year,
-        month
-    ] =
-        monthKey
-            .split("-")
-            .map(Number);
-
-
-    const date =
-        new Date(
-            year,
-            month - 2,
-            1
+    const div =
+        document.createElement(
+            "div"
         );
 
 
-    return [
-
-        date.getFullYear(),
-
-        String(
-            date.getMonth() + 1
-        ).padStart(2, "0")
-
-    ].join("-");
-
-}
+    div.textContent =
+        value;
 
 
-// ========================================
-// MONTH NAME
-// ========================================
-
-function getMonthPrepositional(
-    monthKey
-) {
-
-    const [
-        year,
-        month
-    ] =
-        monthKey
-            .split("-")
-            .map(Number);
-
-
-    const date =
-        new Date(
-            year,
-            month - 1,
-            1
-        );
-
-
-    const monthNames = [
-
-        "январе",
-        "феврале",
-        "марте",
-        "апреле",
-        "мае",
-        "июне",
-        "июле",
-        "августе",
-        "сентябре",
-        "октябре",
-        "ноябре",
-        "декабре"
-
-    ];
-
-
-    return monthNames[
-        date.getMonth()
-    ];
-
+    return div.innerHTML;
 }
