@@ -1888,7 +1888,8 @@ function mergeHistoryForDate(
 
 
             const dayTasks =
-                day.tasks || [];
+                day.tasks ||
+                [];
 
 
             dayTasks.forEach(
@@ -1987,9 +1988,11 @@ function createHistoryDay(
 
                                 ? "Сегодня"
 
-                                : formatDate(
-                                    date
-                                )
+                                : date === getYesterdayKey()
+                                    ? "Вчера"
+                                    : formatDate(
+                                        date
+                                    )
                         }
 
                     </div>
@@ -2156,6 +2159,23 @@ function getTodayKey() {
 
     return formatDateKey(
         new Date()
+    );
+}
+
+
+function getYesterdayKey() {
+
+    const date =
+        new Date();
+
+
+    date.setDate(
+        date.getDate() - 1
+    );
+
+
+    return formatDateKey(
+        date
     );
 }
 
