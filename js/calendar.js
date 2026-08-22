@@ -3,15 +3,6 @@
 (function () {
     let mode = "progress";
 
-    const eventTypes = {
-        vaccination: ["💉", "Вакцинация"],
-        endo: ["🪱", "Эндопаразиты"],
-        ecto: ["🦟", "Эктопаразиты"],
-        dental_cleaning: ["🦷", "Ультразвуковая чистка зубов под наркозом"],
-        medicine: ["💊", "Лечение / лекарство"],
-        other: ["🩺", "Другое"]
-    };
-
     function currentCat() {
         const cats = getCats();
         if (!cats.length) return null;
@@ -50,12 +41,7 @@
     }
 
     function getHealthEvents(catId) {
-        if (typeof getAllHealthEvents === "function") return getAllHealthEvents(catId);
-        if (typeof getCatHealth === "function") {
-            const health = getCatHealth(catId);
-            return Array.isArray(health.medicalEvents) ? health.medicalEvents : [];
-        }
-        return [];
+        return typeof getAllHealthEvents === "function" ? getAllHealthEvents(catId) : [];
     }
 
     function healthCalendar(cat) {
@@ -71,7 +57,7 @@
         for (let d = 1; d <= days; d++) {
             const date = `${key}-${String(d).padStart(2, "0")}`;
             const dayEvents = events.filter(e => e.date === date || e.nextDate === date);
-            const emojis = [...new Set(dayEvents.map(e => e.emoji || eventTypes[e.type]?.[0] || "🩺"))];
+            const emojis = [...new Set(dayEvents.map(e => typeof getHealthEventEmoji === "function" ? getHealthEventEmoji(e) : (e.emoji || "🩺")))];
             cells.push(`<button type="button" class="diary-health-day ${date === getTodayKey() ? "today" : ""} ${dayEvents.length ? "has-events" : ""}" onclick="window.openDiaryHealthDate('${date}')"><span>${d}</span>${emojis.length ? `<small>${emojis.join("")}</small>` : ""}</button>`);
         }
         const monthName = new Intl.DateTimeFormat("ru-RU", { month: "long", year: "numeric" }).format(first);
@@ -111,15 +97,9 @@
         const dayEvents = getHealthEvents(cat.id).filter(e => e.date === date || e.nextDate === date);
         const target = document.getElementById("diaryHealthDateEvents");
         if (!target) return;
-        const title = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", year: "numeric" }).format(new Date(`${date}T12:00:00`));
-        target.innerHTML = `<div class="section-title">${escapeHtml(title)}</div>${dayEvents.length ? dayEvents.map(e => `<div class="card health-event-card" onclick="${typeof window.openHealthEventForm === "function" ? `window.openHealthEventForm('${e.id}')` : `window.openDiaryHealthEventForm('${e.id}')`}"><div><strong>${escapeHtml(e.emoji || eventTypes[e.type]?.[0] || "🩺")} ${escapeHtml(e.title || eventTypes[e.type]?.[1] || "Медицинское событие")}</strong>${e.note ? `<div class="health-event-note">${escapeHtml(e.note)}</div>` : ""}</div><div>${e.nextDate ? `<small>Следующая: ${formatShortDate(e.nextDate)}</small>` : ""}</div></div>`).join("") : `<div class="card health-empty">На этот день медицинских событий нет.</div>`}`;
+        const title = typeof formatHealthDate === "function" ? formatHealthDate(date) : date;
+        target.innerHTML = `<div class="section-title">${escapeHtml(title)}</div>${dayEvents.length ? dayEvents.map(e => `<div class="card health-event-card" onclick="${typeof window.openHealthEventForm === "function" ? `window.openHealthEventForm('${e.id}')` : `window.openDiaryHealthEventForm('${e.id}')`}"><div><strong>${escapeHtml(typeof getHealthEventEmoji === "function" ? getHealthEventEmoji(e) : (e.emoji || "🩺"))} ${escapeHtml(e.title || (typeof getHealthEventTypeLabel === "function" ? getHealthEventTypeLabel(e.type) : "Медицинское событие"))}</strong>${e.note ? `<div class="health-event-note">${escapeHtml(e.note)}</div>` : ""}</div><div>${e.nextDate ? `<small>Следующая: ${typeof formatHealthShortDate === "function" ? formatHealthShortDate(e.nextDate) : e.nextDate}</small>` : ""}</div></div>`).join("") : `<div class="card health-empty">На этот день медицинских событий нет.</div>`}`;
     };
-
-    function formatShortDate(date) {
-        if (!date) return "";
-        const [year, month, day] = date.split("-");
-        return `${day}.${month}.${year}`;
-    }
 
     const original = window.openHistory;
     window.__diaryOriginalOpenHistory = original;
