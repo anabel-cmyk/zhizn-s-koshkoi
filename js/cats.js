@@ -260,11 +260,38 @@ function switchCat(id) {
     renderApp();
 }
 
-function createCatSwitcher() {
-    const cats = getCats();
-    if (!cats.length) return "";
-    const activeId = getActiveCatId();
-    return `<div class="cat-switcher"><div class="cat-switcher-list">${cats.map(cat => `<button class="cat-switcher-item ${cat.id === activeId ? "active" : ""}" onclick="switchCat('${cat.id}')"><span class="cat-switcher-avatar">${cat.avatar ? `<img src="${cat.avatar}" alt="">` : "🐈"}</span><span>${escapeHtml(cat.name)}</span></button>`).join("")}</div><button class="add-cat-button" onclick="addNewCat()">＋ Добавить кошку</button></div>`;
+function renderCatGenderMeta() {
+    const card = document.querySelector(".cat-card");
+    const title = card?.querySelector(".cat-info h2");
+    if (!title) return;
+    title.querySelector(".cat-gender-icon")?.remove();
+    const cat = getActiveCat();
+    if (!cat?.gender) return;
+
+    const icon = document.createElement("span");
+    icon.className = "cat-gender-icon";
+    icon.setAttribute("aria-label", cat.gender);
+    icon.style.cssText = "display:inline-flex;align-items:center;justify-content:center;margin-left:7px;vertical-align:middle;line-height:1;font-size:.72em;transform:translateY(-0.06em);";
+    icon.textContent = cat.gender === "Кот" ? "♂" : "♀";
+    title.appendChild(icon);
 }
+
+// Карточка кошки полностью перерисовывается renderApp().
+// MutationObserver добавляет знак пола в тот же DOM-цикл, без отдельного renderApp()
+// и без повторной перерисовки карточки.
+function observeCatGender() {
+    if (!document.body || window.__catGenderObserver) return;
+
+    window.__catGenderObserver = new MutationObserver(() => {
+        renderCatGenderMeta();
+    });
+
+    window.__catGenderObserver.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+}
+
+document.addEventListener("DOMContentLoaded", observeCatGender);
 
 migrateOldCat();
