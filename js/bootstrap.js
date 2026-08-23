@@ -25,8 +25,6 @@
 
     appScript.onload = async function () {
         try {
-            // Теперь функции приложения уже существуют: можно определить
-            // пользователя и синхронизировать кошек из Supabase.
             if (typeof window.syncMaxUser === "function") {
                 await window.syncMaxUser();
             }
