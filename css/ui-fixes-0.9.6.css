@@ -3,10 +3,6 @@
    Restore the original dashboard geometry.
    ======================================== */
 
-/* ------------------------------
-   TASK ROW
-   ------------------------------ */
-
 .task {
     display: block;
     width: 100%;
@@ -21,22 +17,11 @@
     gap: 14px;
 }
 
-.task-main .task-text {
-    flex: 1 1 auto;
-    min-width: 0;
-}
+.task-main .task-text { flex: 1 1 auto; min-width: 0; }
+.task-main .task-settings-button { flex: 0 0 34px; margin-left: auto; margin-right: 0; }
+.task-main .check { flex: 0 0 25px; }
 
-.task-main .task-settings-button {
-    flex: 0 0 34px;
-    margin-left: auto;
-    margin-right: 0;
-}
-
-.task-main .check {
-    flex: 0 0 25px;
-}
-
-/* Settings must open below the task, never beside it. */
+/* Original settings panel */
 .task-settings {
     width: 100%;
     box-sizing: border-box;
@@ -45,51 +30,73 @@
     border-top: 1px solid var(--line);
 }
 
-.task-setting-row {
+.task-shared-setting {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
+    gap: 18px;
     width: 100%;
     box-sizing: border-box;
     cursor: pointer;
 }
 
-.task-setting-text {
+.task-shared-setting > span:first-child {
     min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 3px;
 }
 
-.task-setting-text strong {
+.task-shared-setting strong {
     font-size: 14px;
     font-weight: 600;
 }
 
-.task-setting-text small {
+.task-shared-setting small {
     color: #888;
     font-size: 12px;
     line-height: 1.35;
 }
 
-.task-shared-checkbox {
-    width: 18px;
-    height: 18px;
-    flex: 0 0 auto;
-    margin: 0;
-    accent-color: var(--text);
+.task-shared-setting input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
 }
 
-/* ------------------------------
-   CAT AVATARS
-   ------------------------------ */
-
-.cat-avatar {
-    overflow: hidden;
-    padding: 0;
+.task-toggle {
+    flex: 0 0 46px;
+    width: 46px;
+    height: 26px;
+    position: relative;
+    border-radius: 20px;
+    background: #ddd;
+    transition: background .2s ease;
 }
 
+.task-toggle::after {
+    content: "";
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 3px;
+    left: 3px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 4px rgba(0,0,0,.18);
+    transition: transform .2s ease;
+}
+
+.task-shared-setting input:checked + .task-toggle {
+    background: #222;
+}
+
+.task-shared-setting input:checked + .task-toggle::after {
+    transform: translateX(20px);
+}
+
+/* Cat avatars */
+.cat-avatar { overflow: hidden; padding: 0; }
 .cat-avatar-image {
     display: block;
     width: 100%;
@@ -101,11 +108,7 @@
     object-position: center;
     border-radius: inherit;
 }
-
-.cat-switcher-avatar {
-    overflow: hidden;
-}
-
+.cat-switcher-avatar { overflow: hidden; }
 .cat-switcher-avatar img {
     display: block;
     width: 100%;
@@ -118,12 +121,138 @@
     border-radius: inherit;
 }
 
-/* ------------------------------
-   MOBILE
-   ------------------------------ */
+/* ========================================
+   HEALTH CALENDAR
+   calendar.js uses diary-health-* classes.
+   Keep the same original visual language as diary.css.
+   ======================================== */
+
+.diary-health-calendar {
+    padding: 18px 16px 16px;
+    border-radius: 18px;
+    background: var(--surface);
+    box-shadow: 0 5px 18px rgba(0,0,0,.045);
+}
+
+.diary-health-calendar-header {
+    display: grid;
+    grid-template-columns: 38px 1fr 38px;
+    align-items: center;
+    text-align: center;
+    margin-bottom: 17px;
+}
+
+.diary-health-calendar-header strong {
+    text-transform: capitalize;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -.2px;
+}
+
+.diary-health-calendar-header button {
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: #666;
+    font-size: 25px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.diary-health-calendar-header button:hover { background: var(--soft); }
+
+.diary-health-weekdays,
+.diary-health-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0,1fr));
+    gap: 5px;
+}
+
+.diary-health-weekdays {
+    margin-bottom: 7px;
+    text-align: center;
+    color: #aaa;
+    font-size: 10px;
+    font-weight: 500;
+}
+
+.diary-health-day {
+    position: relative;
+    min-width: 0;
+    height: 58px;
+    padding: 7px 2px 6px;
+    border: 1px solid transparent;
+    border-radius: 11px;
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    font: inherit;
+    font-size: 13px;
+    color: var(--text);
+    cursor: pointer;
+}
+
+.diary-health-day:hover { background: var(--soft); }
+.diary-health-day.empty { visibility: hidden; }
+.diary-health-day.today { background: #f1efe9; border-color: #e5e1d8; font-weight: 600; }
+.diary-health-day.has-events span { font-weight: 600; }
+
+.diary-health-day small {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 17px;
+    max-width: 100%;
+    font-size: 13px;
+    line-height: 1;
+    letter-spacing: -2px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.diary-health-day.has-events::after {
+    content: "";
+    position: absolute;
+    bottom: 4px;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: #777;
+}
+
+.diary-health-day.today.has-events::after { background: var(--text); }
+
+.diary-add-health {
+    width: 100%;
+    margin-top: 14px;
+    border-radius: 13px;
+    min-height: 44px;
+}
+
+.health-event-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    padding: 15px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    border-radius: 15px;
+}
+
+.health-event-note { margin-top: 4px; color: #888; font-size: 12px; }
+.health-event-card small { display:block; color:#888; white-space:nowrap; font-size:11px; margin-top:3px; }
+.health-empty { color:#888; font-size:13px; padding:15px; border-radius:15px; }
 
 @media (max-width: 480px) {
-    .task-settings {
-        padding-left: 54px;
-    }
+    .task-settings { padding-left: 54px; }
+    .diary-health-calendar { padding: 16px 12px 14px; }
+    .diary-health-weekdays, .diary-health-grid { gap: 4px; }
+    .diary-health-day { height: 54px; border-radius: 10px; }
+    .diary-health-day small { font-size: 12px; }
 }
