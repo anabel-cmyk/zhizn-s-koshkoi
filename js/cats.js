@@ -234,6 +234,7 @@ async function saveCat(event) {
     if (modal) { modal.classList.remove("active"); modal.setAttribute("aria-hidden", "true"); }
     if (typeof setDeleteButtonVisible === "function") setDeleteButtonVisible(false);
     renderApp();
+    renderCatGenderMeta();
     return false;
 }
 
@@ -258,18 +259,32 @@ function switchCat(id) {
     if (!getCats().some(cat => cat.id === id)) return;
     setActiveCatId(id);
     renderApp();
+    renderCatGenderMeta();
+}
+
+function renderCatGenderMeta() {
+    const card = document.querySelector(".cat-card");
+    const title = card?.querySelector(".cat-info h2");
+    if (!title) return;
+    title.querySelector(".cat-gender-icon")?.remove();
+    const cat = getActiveCat();
+    if (!cat?.gender) return;
+    const icon = document.createElement("span");
+    icon.className = "cat-gender-icon";
+    icon.setAttribute("aria-label", cat.gender);
+    icon.textContent = cat.gender === "Кот" ? "♂" : "♀";
+    title.appendChild(icon);
 }
 
 function createCatSwitcher() {
     const cats = getCats();
     if (!cats.length) return "";
     const activeId = getActiveCatId();
-    const activeCat = cats.find(cat => cat.id === activeId) || cats[0];
-    const gender = activeCat?.gender || "";
-    const genderMarkup = gender
-        ? `<div class="cat-profile-gender">${escapeHtml(gender)}</div>`
-        : "";
-    return `<div class="cat-switcher"><div class="cat-switcher-list">${cats.map(cat => `<button class="cat-switcher-item ${cat.id === activeId ? "active" : ""}" onclick="switchCat('${cat.id}')"><span class="cat-switcher-avatar">${cat.avatar ? `<img src="${cat.avatar}" alt="">` : "🐈"}</span><span>${escapeHtml(cat.name)}</span></button>`).join("")}</div><button class="add-cat-button" onclick="addNewCat()">＋ Добавить кошку</button>${genderMarkup}</div>`;
+    return `<div class="cat-switcher"><div class="cat-switcher-list">${cats.map(cat => `<button class="cat-switcher-item ${cat.id === activeId ? "active" : ""}" onclick="switchCat('${cat.id}')"><span class="cat-switcher-avatar">${cat.avatar ? `<img src="${cat.avatar}" alt="">` : "🐈"}</span><span>${escapeHtml(cat.name)}</span></button>`).join("")}</div><button class="add-cat-button" onclick="addNewCat()">＋ Добавить кошку</button></div>`;
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+    setTimeout(renderCatGenderMeta, 0);
+});
 
 migrateOldCat();
