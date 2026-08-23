@@ -149,6 +149,7 @@
                             window.saveCats(cats);
                             window.setActiveCatId(mapped.id);
                             window.renderApp?.();
+                            window.renderCatGenderMeta?.();
                         }
                     } catch (error) { console.error("[BACKEND] Не удалось сохранить профиль:", error); }
                 }
@@ -164,6 +165,9 @@
         const originalToggleTask = window.toggleTask;
         const wrappedToggleTask = function (taskId) {
             originalToggleTask(taskId);
+            // toggleTask() перерисовывает карточку кошки, поэтому декоративный
+            // индикатор пола нужно вернуть после renderApp().
+            window.renderCatGenderMeta?.();
             try {
                 const catId = window.getActiveCatId?.();
                 const tasks = window.getDailyTasks?.(catId) || [];
