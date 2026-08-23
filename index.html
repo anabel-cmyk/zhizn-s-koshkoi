@@ -16,7 +16,19 @@
 </head>
 <body>
 <main class="app">
-<header class="header"><div class="logo">Жизнь с кошкой</div><div class="cat-icon">🐈</div></header>
+<header class="header">
+<div class="logo">Жизнь с кошкой</div>
+<div class="header-actions">
+<button type="button" id="headerCatAvatar" class="cat-icon header-cat-button" onclick="openModalWithCurrentCat()" aria-label="Открыть профиль кошки">🐈</button>
+<button type="button" class="header-menu-button" onclick="toggleHeaderMenu(event)" aria-label="Открыть меню" aria-expanded="false">☰</button>
+</div>
+<div id="headerMenu" class="header-menu" hidden>
+<button type="button" onclick="navigateHeader('home')">🏠 <span>Главная</span></button>
+<button type="button" onclick="navigateHeader('diary')">📖 <span>Дневник</span></button>
+<button type="button" onclick="navigateHeader('calendar')">📅 <span>Календарь</span></button>
+<button type="button" onclick="navigateHeader('achievements')">🏆 <span>Достижения</span></button>
+</div>
+</header>
 <div id="content"></div>
 </main>
 <div id="modal" class="modal" aria-hidden="true">
