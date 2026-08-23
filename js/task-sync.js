@@ -5,11 +5,12 @@
 
 (function () {
     const TASKS_API = "https://qligzwdxxytmsflzbpqy.supabase.co/functions/v1/max-tasks";
-    const originalRenderApp = window.renderApp;
-    const originalToggleTask = window.toggleTask;
-
+    let originalRenderApp = null;
+    let originalToggleTask = null;
+    let initialized = false;
     let readyResolve;
     const ready = new Promise(resolve => { readyResolve = resolve; });
+
     window.taskSyncReady = ready;
 
     function getInitData() {
@@ -51,60 +52,70 @@
 
     async function loadCompletions() {
         const cats = typeof getCats === "function" ? getCats() : [];
-        const today = typeof getTodayKey === "function" ? getTodayKey() : new Date().toISOString().slice(0, 10);
-
         if (!cats.length || !getInitData()) return;
 
-        const result = await request({
-            action: "get",
-            date: today
-        });
-
+        const today = typeof getTodayKey === "function" ? getTodayKey() : new Date().toISOString().slice(0, 10);
+        const result = await request({ action: "get", date: today });
         applyCompletions(result.completions || []);
     }
 
-    window.renderApp = function () {
-        if (!window.__taskSyncLoaded) {
-            const content = document.getElementById("content");
-            if (content) {
-                content.innerHTML = '<div class="welcome"><h1>Загружаем данные…</h1><p>Секунду, проверяем ваши задачи.</p></div>';
-            }
-            ready.then(() => originalRenderApp());
-            return;
+    async function initTaskSync() {
+        if (initialized) return ready;
+        initialized = true;
+
+        originalRenderApp = window.renderApp;
+        originalToggleTask = window.toggleTask;
+
+        if (typeof originalRenderApp !== "function" || typeof originalToggleTask !== "function") {
+            console.error("[TASKS] Основные функции приложения ещё не загружены");
+            window.__taskSyncLoaded = true;
+            readyResolve();
+            return ready;
         }
-        return originalRenderApp();
-    };
 
-    window.toggleTask = function (taskId) {
-        const before = typeof getDailyTasks === "function" ? getDailyTasks() : [];
-        const previous = before.find(task => String(task.id) === String(taskId));
-        const previousDone = previous ? previous.done === true : false;
+        window.renderApp = function () {
+            if (!window.__taskSyncLoaded) {
+                const content = document.getElementById("content");
+                if (content) {
+                    content.innerHTML = '<div class="welcome"><h1>Загружаем данные…</h1><p>Секунду, проверяем ваши задачи.</p></div>';
+                }
+                return ready.then(() => originalRenderApp());
+            }
+            return originalRenderApp();
+        };
 
-        originalToggleTask(taskId);
+        window.toggleTask = function (taskId) {
+            const before = typeof getDailyTasks === "function" ? getDailyTasks() : [];
+            const previous = before.find(task => String(task.id) === String(taskId));
+            const previousDone = previous ? previous.done === true : false;
 
-        const after = typeof getDailyTasks === "function" ? getDailyTasks() : [];
-        const current = after.find(task => String(task.id) === String(taskId));
-        const catId = typeof getActiveCatId === "function" ? getActiveCatId() : null;
+            originalToggleTask(taskId);
 
-        if (!catId || !current || previousDone === (current.done === true)) return;
+            const after = typeof getDailyTasks === "function" ? getDailyTasks() : [];
+            const current = after.find(task => String(task.id) === String(taskId));
+            const catId = typeof getActiveCatId === "function" ? getActiveCatId() : null;
 
-        request({
-            action: "set",
-            catId,
-            taskId: String(taskId),
-            date: typeof getTodayKey === "function" ? getTodayKey() : new Date().toISOString().slice(0, 10),
-            completed: current.done === true
-        }).catch(error => console.error("[TASKS] Ошибка сохранения:", error));
-    };
+            if (!catId || !current || previousDone === (current.done === true)) return;
 
-    document.addEventListener("DOMContentLoaded", async () => {
+            request({
+                action: "set",
+                catId,
+                taskId: String(taskId),
+                date: typeof getTodayKey === "function" ? getTodayKey() : new Date().toISOString().slice(0, 10),
+                completed: current.done === true
+            }).catch(error => console.error("[TASKS] Ошибка сохранения:", error));
+        };
+
         try {
             await loadCompletions();
-            window.__taskSyncLoaded = true;
         } catch (error) {
             console.error("[TASKS] Ошибка загрузки:", error);
-            window.__taskSyncLoaded = true;
         }
+
+        window.__taskSyncLoaded = true;
         readyResolve();
-    });
+        return ready;
+    }
+
+    window.initTaskSync = initTaskSync;
 })();
