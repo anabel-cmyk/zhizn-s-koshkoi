@@ -104,7 +104,13 @@
     const original = window.openHistory;
     window.__diaryOriginalOpenHistory = original;
     window.openHistory = function () {
-        mode = "progress";
+        // Не сбрасываем выбранный подраздел при смене кошки.
+        // Если пользователь находится в календаре, после переключения кошки
+        // остаёмся в календаре; из прогресса остаёмся в прогрессе.
+        if (mode === "calendar") {
+            renderCalendar();
+            return;
+        }
         if (typeof window.__diaryOriginalOpenHistory === "function") {
             window.__diaryOriginalOpenHistory();
             setTimeout(ensureSwitcher, 0);
