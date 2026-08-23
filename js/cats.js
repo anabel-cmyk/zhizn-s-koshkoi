@@ -11,6 +11,11 @@ let pendingCatAvatarPromise = null;
 let profileEditingCatId = null;
 
 function getCats() {
+    if (window.AppStorage) {
+        const cats = AppStorage.get(CATS_KEY, []);
+        return Array.isArray(cats) ? cats : [];
+    }
+
     const saved = localStorage.getItem(CATS_KEY);
     if (!saved) return [];
     try {
@@ -19,10 +24,26 @@ function getCats() {
     } catch { return []; }
 }
 
-function saveCats(cats) { localStorage.setItem(CATS_KEY, JSON.stringify(cats)); }
+function saveCats(cats) {
+    if (window.AppStorage) {
+        AppStorage.set(CATS_KEY, cats);
+        return;
+    }
+    localStorage.setItem(CATS_KEY, JSON.stringify(cats));
+}
 
-function getActiveCatId() { return localStorage.getItem(ACTIVE_CAT_KEY); }
-function setActiveCatId(id) { localStorage.setItem(ACTIVE_CAT_KEY, id); }
+function getActiveCatId() {
+    if (window.AppStorage) return AppStorage.get(ACTIVE_CAT_KEY, null);
+    return localStorage.getItem(ACTIVE_CAT_KEY);
+}
+
+function setActiveCatId(id) {
+    if (window.AppStorage) {
+        AppStorage.set(ACTIVE_CAT_KEY, id);
+        return;
+    }
+    localStorage.setItem(ACTIVE_CAT_KEY, id);
+}
 
 function getActiveCat() {
     const cats = getCats();
@@ -249,7 +270,7 @@ function deleteCurrentCat() {
     saveCats(updatedCats);
     if (typeof deleteCatTasks === "function") deleteCatTasks(cat.id);
     if (typeof deleteCatHistory === "function") deleteCatHistory(cat.id);
-    if (updatedCats.length) setActiveCatId(updatedCats[0].id); else localStorage.removeItem(ACTIVE_CAT_KEY);
+    if (updatedCats.length) setActiveCatId(updatedCats[0].id); else AppStorage ? AppStorage.remove(ACTIVE_CAT_KEY) : localStorage.removeItem(ACTIVE_CAT_KEY);
     closeModal();
     renderApp();
 }
@@ -284,6 +305,9 @@ function createCatSwitcher() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+    if (window.AppStorage) {
+        AppStorage.hydrateMaxStorage([CATS_KEY, ACTIVE_CAT_KEY]);
+    }
     setTimeout(renderCatGenderMeta, 0);
 });
 
