@@ -18,18 +18,22 @@
 
     await loadTelegramBridge();
 
-    try {
-        if (typeof window.syncMaxUser === "function") {
-            await window.syncMaxUser();
-        }
-    } catch (error) {
-        console.error("[BACKEND] Начальная синхронизация не выполнена:", error);
-    }
-
+    // Сначала загружаем само приложение, чтобы backend мог работать
+    // с уже существующими функциями cats/tasks/app.
     const appScript = document.createElement("script");
     appScript.src = "js/app.js?v=0.9.8";
 
-    appScript.onload = function () {
+    appScript.onload = async function () {
+        try {
+            // Теперь функции приложения уже существуют: можно определить
+            // пользователя и синхронизировать кошек из Supabase.
+            if (typeof window.syncMaxUser === "function") {
+                await window.syncMaxUser();
+            }
+        } catch (error) {
+            console.error("[BACKEND] Начальная синхронизация не выполнена:", error);
+        }
+
         const taskSyncScript = document.createElement("script");
         taskSyncScript.src = "js/task-sync.js?v=0.9.8";
 
