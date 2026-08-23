@@ -351,6 +351,13 @@
     line-height: 1.35;
 }
 
+/* Achievements have their own page now. Keep the home dashboard focused
+   on care and profile information; the menu remains the single entry point. */
+#content:has(.cat-card) .achievements-section-title,
+#content:has(.cat-card) .achievements-card {
+    display: none;
+}
+
 @media (max-width: 480px) {
     .task-settings { padding-left: 54px; }
     .diary-health-calendar { padding: 16px 12px 14px; }
