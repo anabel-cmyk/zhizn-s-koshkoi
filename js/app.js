@@ -6,13 +6,118 @@
 
 
 // ========================================
+// HEADER NAVIGATION
+// ========================================
+
+function updateHeaderCat() {
+    const button = document.getElementById("headerCatAvatar");
+    if (!button || typeof getActiveCat !== "function") return;
+
+    const cat = getActiveCat();
+    if (!cat) {
+        button.innerHTML = "🐈";
+        return;
+    }
+
+    const profile =
+        typeof getCatHealth === "function"
+            ? getCatHealth(cat.id)
+            : { avatar: "" };
+
+    const avatar = cat.avatar || profile.avatar;
+
+    button.innerHTML = avatar
+        ? `<img src="${avatar}" alt="${escapeHtml(cat.name || "")}">`
+        : "🐈";
+}
+
+
+function toggleHeaderMenu(event) {
+    if (event) event.stopPropagation();
+
+    const menu = document.getElementById("headerMenu");
+    const button = document.querySelector(".header-menu-button");
+    if (!menu) return;
+
+    const shouldOpen = menu.hidden;
+    menu.hidden = !shouldOpen;
+    if (button) button.setAttribute("aria-expanded", String(shouldOpen));
+}
+
+
+function closeHeaderMenu() {
+    const menu = document.getElementById("headerMenu");
+    const button = document.querySelector(".header-menu-button");
+    if (menu) menu.hidden = true;
+    if (button) button.setAttribute("aria-expanded", "false");
+}
+
+
+function navigateHeader(destination) {
+    closeHeaderMenu();
+
+    if (destination === "home") {
+        renderApp();
+        return;
+    }
+
+    if (destination === "diary") {
+        openHistory();
+        return;
+    }
+
+    if (destination === "calendar") {
+        if (typeof window.setDiarySubsection === "function") {
+            window.setDiarySubsection("calendar");
+        } else {
+            openHistory();
+        }
+        return;
+    }
+
+    if (destination === "achievements") {
+        renderAchievementsPage();
+    }
+}
+
+
+function renderAchievementsPage() {
+    const content = document.getElementById("content");
+    if (!content) return;
+
+    if (typeof getCats === "function" && !getCats().length) {
+        renderEmptyState();
+        return;
+    }
+
+    content.innerHTML = `
+        <div class="history-header">
+            <button class="back-button" onclick="renderApp()">← Назад</button>
+            <h1>Достижения</h1>
+        </div>
+
+        ${createAchievementsSection()}
+    `;
+}
+
+
+// ========================================
 // APP START
 // ========================================
 
 document.addEventListener("DOMContentLoaded", () => {
 
     migrateOldCat();
+    updateHeaderCat();
     renderApp();
+
+    document.addEventListener("click", event => {
+        const menu = document.getElementById("headerMenu");
+        const header = document.querySelector(".header");
+        if (menu && !menu.hidden && header && !header.contains(event.target)) {
+            closeHeaderMenu();
+        }
+    });
 });
 
 
@@ -20,6 +125,8 @@ function renderApp() {
 
     const cats =
         getCats();
+
+    updateHeaderCat();
 
     if (!cats.length) {
         renderEmptyState();
