@@ -1,13 +1,16 @@
 // ========================================
 // ЖИЗНЬ С КОШКОЙ
 // TASKS.JS
-// MVP 0.9.2
+// MVP 0.9.6
 //
-// Индивидуальные задачи для каждой кошки
-// + общие задачи для всех кошек
+// Ежедневные задачи
+// + индивидуальные / общие задачи
+// + игровая регулярность
 // ========================================
 
 const TASKS_KEY = "dailyTasks";
+const LEGACY_TASK_SHARED_SETTINGS_KEY = "taskSharedSettings";
+let legacySharedMigrationDone = false;
 
 
 // ========================================
@@ -15,168 +18,69 @@ const TASKS_KEY = "dailyTasks";
 // ========================================
 
 function getDefaultTasks() {
-
     return [
-
         {
             id: "play",
-
             icon: "🎾",
-
             name: "Поиграть",
-
-            description:
-                "15–30 минут",
-
-            frequency:
-                "daily",
-
-            statistics:
-                "sessions",
-
-            targetPerWeek:
-                null,
-
-            targetPerMonth:
-                null,
-
-            // false = отдельно для каждой кошки
-            // true = одна отметка для всех кошек
-            shared:
-                false,
-
-            done:
-                false
+            description: "15–30 минут",
+            frequency: "daily",
+            statistics: "monthly",
+            targetPerWeek: 7,
+            targetPerMonth: 30,
+            shared: false,
+            done: false
         },
-
-
         {
             id: "water",
-
             icon: "💧",
-
             name: "Проверить воду",
-
-            description:
-                "Свежая вода",
-
-            frequency:
-                "daily",
-
-            statistics:
-                "none",
-
-            targetPerWeek:
-                null,
-
-            targetPerMonth:
-                null,
-
-            // По умолчанию индивидуальная.
-            shared:
-                false,
-
-            done:
-                false
+            description: "Свежая вода",
+            frequency: "daily",
+            statistics: "none",
+            targetPerWeek: null,
+            targetPerMonth: null,
+            shared: false,
+            done: false
         },
-
-
         {
             id: "teeth",
-
             icon: "🦷",
-
             name: "Уход за зубами",
-
-            description:
-                "Регулярный уход",
-
-            frequency:
-                "weekly",
-
-            statistics:
-                "monthly",
-
-            targetPerWeek:
-                2,
-
-            targetPerMonth:
-                8,
-
-            shared:
-                false,
-
-            done:
-                false
+            description: "Регулярный уход",
+            frequency: "weekly",
+            statistics: "monthly",
+            targetPerWeek: 2,
+            targetPerMonth: 8,
+            shared: false,
+            done: false
         }
-
     ];
 }
 
 
 // ========================================
-// TASK STORAGE
-//
-// {
-//     "cat_123": {
-//         date: "2026-08-21",
-//         tasks: [...]
-//     },
-//
-//     "cat_456": {
-//         date: "2026-08-21",
-//         tasks: [...]
-//     }
-// }
-//
+// STORAGE
 // ========================================
 
 function getTasksStorage() {
-
-    const saved =
-        localStorage.getItem(
-            TASKS_KEY
-        );
-
-
-    if (!saved) {
-        return {};
-    }
-
+    const saved = localStorage.getItem(TASKS_KEY);
+    if (!saved) return {};
 
     try {
-
-        const data =
-            JSON.parse(saved);
-
-
-        if (
-            !data ||
-            typeof data !== "object" ||
-            Array.isArray(data)
-        ) {
-
+        const data = JSON.parse(saved);
+        if (!data || typeof data !== "object" || Array.isArray(data)) {
             return {};
-
         }
-
-
         return data;
-
     } catch {
-
         return {};
-
     }
 }
 
 
 function saveTasksStorage(data) {
-
-    localStorage.setItem(
-        TASKS_KEY,
-        JSON.stringify(data)
-    );
+    localStorage.setItem(TASKS_KEY, JSON.stringify(data));
 }
 
 
@@ -185,25 +89,12 @@ function saveTasksStorage(data) {
 // ========================================
 
 function migrateOldTasks() {
-
-    const saved =
-        localStorage.getItem(
-            TASKS_KEY
-        );
-
-
-    if (!saved) {
-        return;
-    }
-
+    const saved = localStorage.getItem(TASKS_KEY);
+    if (!saved) return;
 
     try {
+        const data = JSON.parse(saved);
 
-        const data =
-            JSON.parse(saved);
-
-
-        // Уже новая структура.
         if (
             data &&
             typeof data === "object" &&
@@ -211,164 +102,134 @@ function migrateOldTasks() {
             !data.date &&
             !Array.isArray(data.tasks)
         ) {
-
             return;
-
         }
 
-
-        // Старый формат.
-        if (
-            data &&
-            data.date &&
-            Array.isArray(data.tasks)
-        ) {
-
+        if (data && data.date && Array.isArray(data.tasks)) {
             const activeCatId =
                 typeof getActiveCatId === "function"
                     ? getActiveCatId()
                     : null;
 
+            if (!activeCatId) return;
 
-            if (!activeCatId) {
-                return;
-            }
-
-
-            const storage = {};
-
-
-            storage[activeCatId] = {
-
-                date:
-                    data.date,
-
-                tasks:
-                    normalizeTasks(
-                        data.tasks
-                    )
-
-            };
+            saveTasksStorage({
+                [activeCatId]: {
+                    date: data.date,
+                    tasks: normalizeTasks(data.tasks)
+                }
+            });
+        }
+    } catch {
+        // Старые повреждённые данные не должны ломать приложение.
+    }
+}
 
 
-            saveTasksStorage(
-                storage
-            );
+// Переносим старый отдельный флаг общей задачи
+// в основной источник данных dailyTasks.
+function migrateLegacySharedSettings() {
+    if (legacySharedMigrationDone) return;
 
+    legacySharedMigrationDone = true;
+
+    const saved = localStorage.getItem(LEGACY_TASK_SHARED_SETTINGS_KEY);
+    if (!saved) return;
+
+    const cats =
+        typeof getCats === "function"
+            ? getCats()
+            : [];
+
+    if (!cats.length) {
+        legacySharedMigrationDone = false;
+        return;
+    }
+
+    try {
+        const settings = JSON.parse(saved);
+
+        if (!settings || typeof settings !== "object" || Array.isArray(settings)) {
+            localStorage.removeItem(LEGACY_TASK_SHARED_SETTINGS_KEY);
+            return;
         }
 
+        const storage = getTasksStorage();
+        const today = getTodayKey();
+
+        cats.forEach(cat => {
+            if (!storage[cat.id]) {
+                storage[cat.id] = {
+                    date: today,
+                    tasks: getDefaultTasks()
+                };
+            }
+
+            if (storage[cat.id].date !== today) return;
+
+            storage[cat.id].tasks = normalizeTasks(storage[cat.id].tasks);
+
+            Object.keys(settings).forEach(taskId => {
+                const task = storage[cat.id].tasks.find(item => item.id === taskId);
+                if (task) {
+                    task.shared = settings[taskId] === true;
+                }
+            });
+        });
+
+        saveTasksStorage(storage);
+        localStorage.removeItem(LEGACY_TASK_SHARED_SETTINGS_KEY);
+
     } catch {
-
-        // Ничего не делаем.
-
+        legacySharedMigrationDone = false;
     }
 }
 
 
 // ========================================
-// TASK NORMALIZATION
+// NORMALIZATION
 // ========================================
 
 function normalizeTasks(tasks) {
+    const defaults = getDefaultTasks();
+    if (!Array.isArray(tasks)) return defaults;
 
-    const defaults =
-        getDefaultTasks();
+    const result = tasks.map(oldTask => {
+        const defaultTask = defaults.find(task => task.id === oldTask.id);
 
-
-    if (!Array.isArray(tasks)) {
-
-        return defaults;
-
-    }
-
-
-    const result =
-        tasks.map(
-            oldTask => {
-
-                const defaultTask =
-                    defaults.find(
-                        task =>
-                            task.id ===
-                            oldTask.id
-                    );
-
-
-                if (!defaultTask) {
-
-                    return {
-
-                        ...oldTask,
-
-                        shared:
-                            oldTask.shared === true,
-
-                        done:
-                            oldTask.done === true
-
-                    };
-
-                }
-
-
-                return {
-
-                    ...defaultTask,
-
-                    ...oldTask,
-
-                    shared:
-                        oldTask.shared === true,
-
-                    done:
-                        oldTask.done === true
-
-                };
-
-            }
-        );
-
-
-    // Добавляем новые системные задачи.
-    defaults.forEach(
-        defaultTask => {
-
-            const exists =
-                result.some(
-                    task =>
-                        task.id ===
-                        defaultTask.id
-                );
-
-
-            if (!exists) {
-
-                result.push(
-                    {
-                        ...defaultTask
-                    }
-                );
-
-            }
-
+        if (!defaultTask) {
+            return {
+                ...oldTask,
+                shared: oldTask.shared === true,
+                done: oldTask.done === true
+            };
         }
-    );
 
+        return {
+            ...defaultTask,
+            ...oldTask,
+            shared: oldTask.shared === true,
+            done: oldTask.done === true
+        };
+    });
+
+    defaults.forEach(defaultTask => {
+        if (!result.some(task => task.id === defaultTask.id)) {
+            result.push({ ...defaultTask });
+        }
+    });
 
     return result;
 }
 
 
 // ========================================
-// GET DAILY TASKS
+// DAILY TASKS
 // ========================================
 
-function getDailyTasks(
-    catId = null
-) {
-
+function getDailyTasks(catId = null) {
     migrateOldTasks();
-
+    migrateLegacySharedSettings();
 
     const activeCatId =
         catId ||
@@ -378,121 +239,73 @@ function getDailyTasks(
                 : null
         );
 
+    if (!activeCatId) return [];
 
-    if (!activeCatId) {
-        return [];
-    }
+    const today = getTodayKey();
+    const storage = getTasksStorage();
+    let catData = storage[activeCatId];
 
-
-    const today =
-        getTodayKey();
-
-
-    const storage =
-        getTasksStorage();
-
-
-    const catData =
-        storage[activeCatId];
-
-
-    // У кошки ещё нет задач.
     if (!catData) {
-
-        const tasks =
-            getDefaultTasks();
-
-
-        storage[activeCatId] = {
-
-            date:
-                today,
-
-            tasks
-
+        catData = {
+            date: today,
+            tasks: getDefaultTasks()
         };
-
-
-        saveTasksStorage(
-            storage
-        );
-
-
-        return tasks;
+        storage[activeCatId] = catData;
+        saveTasksStorage(storage);
+        return catData.tasks;
     }
 
+    if (catData.date !== today) {
+        saveTasksToHistory(activeCatId, catData.date, catData.tasks);
 
-    // Наступил новый день.
-    if (
-        catData.date !== today
-    ) {
-
-        saveTasksToHistory(
-            activeCatId,
-            catData.date,
-            catData.tasks
-        );
-
-
-        const tasks =
-            getDefaultTasks();
-
-
-        storage[activeCatId] = {
-
-            date:
-                today,
-
-            tasks
-
+        catData = {
+            date: today,
+            tasks: getDefaultTasks()
         };
 
-
-        saveTasksStorage(
-            storage
-        );
-
-
-        return tasks;
+        storage[activeCatId] = catData;
+        saveTasksStorage(storage);
+        return catData.tasks;
     }
 
+    catData.tasks = normalizeTasks(catData.tasks);
+    syncSharedFlagsForCat(activeCatId, storage);
+    saveTasksStorage(storage);
 
-    const updatedTasks =
-        normalizeTasks(
-            catData.tasks
-        );
-
-
-    storage[activeCatId] = {
-
-        date:
-            today,
-
-        tasks:
-            updatedTasks
-
-    };
-
-
-    saveTasksStorage(
-        storage
-    );
-
-
-    return updatedTasks;
+    return storage[activeCatId].tasks;
 }
 
 
-// ========================================
-// SAVE DAILY TASKS
-// ========================================
+function syncSharedFlagsForCat(catId, storage) {
+    const target = storage[catId];
+    if (!target || !Array.isArray(target.tasks)) return;
 
-function saveDailyTasks(
-    date,
-    tasks,
-    catId = null
-) {
+    const sharedIds = new Set();
 
+    Object.keys(storage).forEach(id => {
+        if (id === catId) return;
+
+        const data = storage[id];
+        if (
+            !data ||
+            data.date !== getTodayKey() ||
+            !Array.isArray(data.tasks)
+        ) return;
+
+        data.tasks.forEach(task => {
+            if (task.shared === true) sharedIds.add(task.id);
+        });
+    });
+
+    if (!sharedIds.size) return;
+
+    target.tasks.forEach(task => {
+        if (sharedIds.has(task.id)) task.shared = true;
+    });
+}
+
+
+function saveDailyTasks(date, tasks, catId = null) {
     const activeCatId =
         catId ||
         (
@@ -501,95 +314,37 @@ function saveDailyTasks(
                 : null
         );
 
+    if (!activeCatId) return;
 
-    if (!activeCatId) {
-        return;
-    }
-
-
-    const storage =
-        getTasksStorage();
-
+    const storage = getTasksStorage();
 
     storage[activeCatId] = {
-
         date,
-
-        tasks:
-            normalizeTasks(tasks)
-
+        tasks: normalizeTasks(tasks)
     };
 
-
-    saveTasksStorage(
-        storage
-    );
+    saveTasksStorage(storage);
 }
 
 
 // ========================================
-// SAVE DAY TO HISTORY
+// HISTORY
 // ========================================
 
-function saveTasksToHistory(
-    catId,
-    date,
-    tasks
-) {
+function saveTasksToHistory(catId, date, tasks) {
+    if (!catId || !date || !tasks) return;
 
-    if (
-        !catId ||
-        !date ||
-        !tasks
-    ) {
-
-        return;
-
-    }
-
-
-    /*
-     * diary.js:
-     *
-     * saveDayToHistory(
-     *     catId,
-     *     date,
-     *     tasks
-     * )
-     */
-
-    if (
-        typeof saveDayToHistory ===
-        "function"
-    ) {
-
+    if (typeof saveDayToHistory === "function") {
         try {
-
-            saveDayToHistory(
-                catId,
-                date,
-                tasks
-            );
-
+            saveDayToHistory(catId, date, tasks);
         } catch {
-
-            // История не должна ломать
-            // работу ежедневных задач.
-
+            // История не должна ломать задачи.
         }
-
     }
 }
 
 
-// ========================================
-// SAVE CURRENT TASKS TO HISTORY
-// ========================================
-
-function saveCurrentTasksToHistory(
-    catId = null
-) {
-
+function saveCurrentTasksToHistory(catId = null) {
     const activeCatId =
         catId ||
         (
@@ -598,30 +353,13 @@ function saveCurrentTasksToHistory(
                 : null
         );
 
+    if (!activeCatId) return;
 
-    if (!activeCatId) {
-        return;
-    }
+    const storage = getTasksStorage();
+    const catData = storage[activeCatId];
+    if (!catData) return;
 
-
-    const storage =
-        getTasksStorage();
-
-
-    const catData =
-        storage[activeCatId];
-
-
-    if (!catData) {
-        return;
-    }
-
-
-    saveTasksToHistory(
-        activeCatId,
-        catData.date,
-        catData.tasks
-    );
+    saveTasksToHistory(activeCatId, catData.date, catData.tasks);
 }
 
 
@@ -630,162 +368,136 @@ function saveCurrentTasksToHistory(
 // ========================================
 
 function createTask(task) {
-
     return `
-
         <div class="task">
-
             <div class="task-main">
-
-                <div class="task-icon">
-                    ${task.icon}
-                </div>
-
+                <div class="task-icon">${task.icon}</div>
 
                 <div class="task-text">
-
                     <div class="task-name">
-                        ${escapeHtml(
-                            task.name
-                        )}
+                        ${escapeHtml(task.name)}
+                        ${task.shared === true
+                            ? '<span class="task-shared-badge">Общая</span>'
+                            : ''}
                     </div>
-
-
                     <div class="task-time">
-                        ${escapeHtml(
-                            task.description
-                        )}
+                        ${escapeHtml(task.description)}
                     </div>
-
                 </div>
-
 
                 <button
                     class="task-settings-button"
                     type="button"
-                    onclick="
-                        toggleTaskSettings(
-                            '${task.id}'
-                        )
-                    "
+                    onclick="openTaskSettings('${task.id}')"
                     aria-label="Настройки задачи"
-                    aria-expanded="false"
-                >
-                    ⚙
-                </button>
-
+                >⚙</button>
 
                 <div
-                    class="
-                        check
-                        ${
-                            task.done
-                                ? "done"
-                                : ""
-                        }
-                    "
-                    onclick="
-                        toggleTask(
-                            '${task.id}'
-                        )
-                    "
+                    class="check ${task.done ? "done" : ""}"
+                    onclick="toggleTask('${task.id}')"
                     role="button"
                     aria-label="Отметить выполненным"
                 ></div>
-
             </div>
-
-
-            <div
-                id="task-settings-${task.id}"
-                class="task-settings"
-                hidden
-            >
-
-                <label
-                    class="task-setting-row"
-                >
-
-                    <span class="task-setting-text">
-
-                        <strong>
-                            Общая для всех кошек
-                        </strong>
-
-                        <small>
-                            Одна отметка будет применяться
-                            ко всем кошкам
-                        </small>
-
-                    </span>
-
-
-                    <input
-                        type="checkbox"
-                        class="task-shared-checkbox"
-                        ${
-                            task.shared === true
-                                ? "checked"
-                                : ""
-                        }
-                        onchange="
-                            toggleTaskShared(
-                                '${task.id}',
-                                this.checked
-                            )
-                        "
-                    >
-
-                </label>
-
-            </div>
-
         </div>
-
     `;
 }
 
+
 // ========================================
-// TASK SETTINGS
+// TASK SETTINGS MODAL
 // ========================================
 
-function toggleTaskSettings(taskId) {
+function openTaskSettings(taskId) {
+    const activeCatId =
+        typeof getActiveCatId === "function"
+            ? getActiveCatId()
+            : null;
 
-    const settings =
-        document.getElementById(
-            `task-settings-${taskId}`
-        );
+    if (!activeCatId) return;
 
-    if (!settings) {
-        return;
-    }
+    const task = getDailyTasks(activeCatId).find(item => item.id === taskId);
+    if (!task) return;
+
+    closeTaskSettings();
+
+    const modal = document.createElement("div");
+    modal.id = "taskSettingsModal";
+    modal.className = "task-settings-modal";
+    modal.setAttribute("aria-hidden", "false");
+
+    modal.innerHTML = `
+        <div class="task-settings-overlay" onclick="closeTaskSettings()"></div>
+
+        <div
+            class="task-settings-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="taskSettingsTitle"
+        >
+            <div class="task-settings-header">
+                <div class="task-settings-icon">${task.icon}</div>
+
+                <button
+                    type="button"
+                    class="task-settings-close"
+                    onclick="closeTaskSettings()"
+                    aria-label="Закрыть"
+                >×</button>
+            </div>
+
+            <h2 id="taskSettingsTitle" class="task-settings-title">
+                ${escapeHtml(task.name)}
+            </h2>
+
+            <p class="task-settings-description">
+                ${escapeHtml(task.description)}
+            </p>
+
+            <label class="task-setting-row">
+                <span class="task-setting-text">
+                    <strong>Общая для всех кошек</strong>
+                    <small>
+                        Одна отметка будет применяться ко всем кошкам.
+                    </small>
+                </span>
+
+                <span class="task-toggle-control">
+                    <input
+                        class="task-shared-checkbox"
+                        type="checkbox"
+                        ${task.shared === true ? "checked" : ""}
+                        onchange="toggleTaskShared('${task.id}', this.checked)"
+                    >
+                    <span class="task-toggle" aria-hidden="true"></span>
+                </span>
+            </label>
+
+            <button
+                type="button"
+                class="task-settings-done"
+                onclick="closeTaskSettings()"
+            >Готово</button>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    requestAnimationFrame(() => {
+        modal.classList.add("active");
+    });
+}
 
 
-    const button =
-        settings
-            .closest(".task")
-            ?.querySelector(
-                ".task-settings-button"
-            );
+function closeTaskSettings() {
+    const modal = document.getElementById("taskSettingsModal");
+    if (!modal) return;
 
+    modal.classList.remove("active");
 
-    const isHidden =
-        settings.hidden;
-
-
-    settings.hidden =
-        !isHidden;
-
-
-    if (button) {
-
-        button.setAttribute(
-            "aria-expanded",
-            String(isHidden)
-        );
-
-    }
-
+    setTimeout(() => {
+        if (modal.parentNode) modal.remove();
+    }, 200);
 }
 
 
@@ -793,643 +505,79 @@ function toggleTaskSettings(taskId) {
 // SHARED TASK
 // ========================================
 
-function toggleTaskShared(
-    taskId,
-    isShared
-) {
-
+function toggleTaskShared(taskId, requestedState) {
+    const cats = typeof getCats === "function" ? getCats() : [];
     const activeCatId =
         typeof getActiveCatId === "function"
             ? getActiveCatId()
             : null;
 
+    if (!cats.length || !activeCatId) return;
 
-    if (!activeCatId) {
-        return;
-    }
+    const storage = getTasksStorage();
+    const today = getTodayKey();
 
+    if (!storage[activeCatId]) getDailyTasks(activeCatId);
 
-    const storage =
-        getTasksStorage();
+    const activeData = storage[activeCatId];
+    if (!activeData) return;
 
+    activeData.tasks = normalizeTasks(activeData.tasks);
 
-    const cats =
-        typeof getCats === "function"
-            ? getCats()
-            : [];
-
-
-    /*
-     * ======================================
-     * НАСТРОЙКА ОБЩЕЙ ЗАДАЧИ
-     * ======================================
-     *
-     * shared хранится одинаково
-     * у всех кошек.
-     */
-
-    cats.forEach(
-        cat => {
-
-            if (!storage[cat.id]) {
-
-                storage[cat.id] = {
-
-                    date:
-                        getTodayKey(),
-
-                    tasks:
-                        getDefaultTasks()
-
-                };
-
-            }
-
-
-            /*
-             * Если у кошки уже есть
-             * задачи за сегодняшний день,
-             * используем их.
-             */
-
-            if (
-                storage[cat.id].date !==
-                getTodayKey()
-            ) {
-
-                storage[cat.id] = {
-
-                    date:
-                        getTodayKey(),
-
-                    tasks:
-                        getDefaultTasks()
-
-                };
-
-            }
-
-
-            const catTask =
-                storage[cat.id]
-                    .tasks
-                    .find(
-                        item =>
-                            item.id ===
-                            taskId
-                    );
-
-
-            if (catTask) {
-
-                catTask.shared =
-                    isShared;
-
-            }
-
-        }
-    );
-
-
-    /*
-     * Если задача стала общей,
-     * приводим отметки всех кошек
-     * к состоянию активной кошки.
-     *
-     * Это важно, чтобы не получилось:
-     *
-     * Микки — ✓
-     * Феникс — пусто
-     *
-     * после включения общего режима.
-     */
-
-    if (isShared) {
-
-        const activeData =
-            storage[activeCatId];
-
-
-        const activeTask =
-            activeData?.tasks?.find(
-                item =>
-                    item.id === taskId
-            );
-
-
-        const sharedDone =
-            activeTask?.done === true;
-
-
-        cats.forEach(
-            cat => {
-
-                const catTask =
-                    storage[cat.id]
-                        ?.tasks
-                        ?.find(
-                            item =>
-                                item.id ===
-                                taskId
-                        );
-
-
-                if (catTask) {
-
-                    catTask.done =
-                        sharedDone;
-
-                }
-
-            }
-        );
-
-    }
-
-
-    saveTasksStorage(
-        storage
-    );
-
-
-    /*
-     * Сохраняем историю
-     * каждой кошки отдельно.
-     */
-
-    cats.forEach(
-        cat => {
-
-            const catData =
-                storage[cat.id];
-
-
-            if (!catData) {
-                return;
-            }
-
-
-            saveTasksToHistory(
-                cat.id,
-                catData.date,
-                catData.tasks
-            );
-
-        }
-    );
-
-
-    renderApp();
-
-}
-// ========================================
-// TASK SETTINGS MODAL
-// ========================================
-
-function openTaskSettings(
-    taskId
-) {
-
-    const activeCatId =
-        typeof getActiveCatId === "function"
-            ? getActiveCatId()
-            : null;
-
-
-    if (!activeCatId) {
-        return;
-    }
-
-
-    const tasks =
-        getDailyTasks(
-            activeCatId
-        );
-
-
-    const task =
-        tasks.find(
-            item =>
-                item.id === taskId
-        );
-
-
-    if (!task) {
-        return;
-    }
-
-
-    closeTaskSettings();
-
-
-    const modal =
-        document.createElement(
-            "div"
-        );
-
-
-    modal.id =
-        "taskSettingsModal";
-
-
-    modal.className =
-        "task-settings-modal";
-
-
-    modal.setAttribute(
-        "aria-hidden",
-        "false"
-    );
-
-
-    modal.innerHTML = `
-
-        <div
-            class="
-                task-settings-overlay
-            "
-            onclick="
-                closeTaskSettings()
-            "
-        ></div>
-
-
-        <div
-            class="
-                task-settings-dialog
-            "
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="taskSettingsTitle"
-        >
-
-            <div
-                class="
-                    task-settings-header
-                "
-            >
-
-                <div>
-
-                    <div
-                        class="
-                            task-settings-icon
-                        "
-                    >
-                        ${task.icon}
-                    </div>
-
-                </div>
-
-
-                <button
-                    type="button"
-                    class="
-                        task-settings-close
-                    "
-                    onclick="
-                        closeTaskSettings()
-                    "
-                    aria-label="Закрыть"
-                >
-                    ×
-                </button>
-
-            </div>
-
-
-            <h2
-                id="taskSettingsTitle"
-                class="
-                    task-settings-title
-                "
-            >
-                ${escapeHtml(
-                    task.name
-                )}
-            </h2>
-
-
-            <p
-                class="
-                    task-settings-description
-                "
-            >
-                ${escapeHtml(
-                    task.description
-                )}
-            </p>
-
-
-            <div
-                class="
-                    task-setting-row
-                "
-            >
-
-                <div
-                    class="
-                        task-setting-text
-                    "
-                >
-
-                    <strong>
-                        Общая для всех кошек
-                    </strong>
-
-                    <span>
-                        Одна отметка будет применяться
-                        ко всем кошкам.
-                    </span>
-
-                </div>
-
-
-                <button
-                    type="button"
-                    class="
-                        task-switch
-                        ${
-                            task.shared
-                                ? "active"
-                                : ""
-                        }
-                    "
-                    onclick="
-                        toggleTaskShared(
-                            '${task.id}'
-                        )
-                    "
-                    role="switch"
-                    aria-checked="${
-                        task.shared
-                            ? "true"
-                            : "false"
-                    }"
-                >
-
-                    <span
-                        class="
-                            task-switch-knob
-                        "
-                    ></span>
-
-                </button>
-
-            </div>
-
-
-            <button
-                type="button"
-                class="
-                    task-settings-done
-                "
-                onclick="
-                    closeTaskSettings()
-                "
-            >
-                Готово
-            </button>
-
-        </div>
-
-    `;
-
-
-    document.body.appendChild(
-        modal
-    );
-
-
-    requestAnimationFrame(
-        () => {
-
-            modal.classList.add(
-                "active"
-            );
-
-        }
-    );
-}
-
-
-function closeTaskSettings() {
-
-    const modal =
-        document.getElementById(
-            "taskSettingsModal"
-        );
-
-
-    if (!modal) {
-        return;
-    }
-
-
-    modal.classList.remove(
-        "active"
-    );
-
-
-    setTimeout(
-        () => {
-
-            modal.remove();
-
-        },
-        200
-    );
-}
-
-
-// ========================================
-// TOGGLE SHARED TASK
-// ========================================
-
-function toggleTaskShared(
-    taskId
-) {
-
-    const cats =
-        typeof getCats === "function"
-            ? getCats()
-            : [];
-
-
-    if (!cats.length) {
-        return;
-    }
-
-
-    const activeCatId =
-        typeof getActiveCatId === "function"
-            ? getActiveCatId()
-            : null;
-
-
-    if (!activeCatId) {
-        return;
-    }
-
-
-    const storage =
-        getTasksStorage();
-
-
-    /*
-     * Получаем текущую задачу
-     * активной кошки.
-     */
-
-    if (!storage[activeCatId]) {
-
-        getDailyTasks(
-            activeCatId
-        );
-
-    }
-
-
-    const activeData =
-        storage[activeCatId];
-
-
-    if (!activeData) {
-        return;
-    }
-
-
-    const activeTask =
-        activeData.tasks.find(
-            task =>
-                task.id === taskId
-        );
-
-
-    if (!activeTask) {
-        return;
-    }
-
+    const activeTask = activeData.tasks.find(task => task.id === taskId);
+    if (!activeTask) return;
 
     const newSharedState =
-        !activeTask.shared;
+        typeof requestedState === "boolean"
+            ? requestedState
+            : !activeTask.shared;
 
-
-    /*
-     * ======================================
-     * ОБЩАЯ НАСТРОЙКА ДЛЯ ВСЕХ КОШЕК
-     * ======================================
-     *
-     * shared хранится у каждой кошки,
-     * но значение всегда синхронизируется.
-     */
-
-    cats.forEach(
-        cat => {
-
-            if (!storage[cat.id]) {
-
-                storage[cat.id] = {
-
-                    date:
-                        getTodayKey(),
-
-                    tasks:
-                        getDefaultTasks()
-
-                };
-
-            }
-
-
-            const catTasks =
-                storage[cat.id].tasks;
-
-
-            const catTask =
-                catTasks.find(
-                    task =>
-                        task.id === taskId
-                );
-
-
-            if (catTask) {
-
-                catTask.shared =
-                    newSharedState;
-
-            }
-
+    cats.forEach(cat => {
+        if (!storage[cat.id]) {
+            storage[cat.id] = {
+                date: today,
+                tasks: getDefaultTasks()
+            };
         }
-    );
 
+        if (storage[cat.id].date !== today) {
+            storage[cat.id] = {
+                date: today,
+                tasks: getDefaultTasks()
+            };
+        }
 
-    /*
-     * Если задача становится общей,
-     * состояние выполнения активной кошки
-     * становится единым для всех.
-     *
-     * Например:
-     *
-     * Микки — вода ✓
-     * Чушпан — вода —
-     *
-     * включаем «Общая для всех» →
-     * вода ✓ у обеих.
-     */
+        storage[cat.id].tasks = normalizeTasks(storage[cat.id].tasks);
+    });
 
     if (newSharedState) {
+        const sharedDone = activeTask.done === true;
 
-        const sharedDone =
-            activeTask.done === true;
+        cats.forEach(cat => {
+            const task = storage[cat.id].tasks.find(item => item.id === taskId);
+            if (!task) return;
 
+            task.shared = true;
+            task.done = sharedDone;
+        });
 
-        cats.forEach(
-            cat => {
-
-                const catData =
-                    storage[cat.id];
-
-
-                if (!catData) {
-                    return;
-                }
-
-
-                const catTask =
-                    catData.tasks.find(
-                        task =>
-                            task.id === taskId
-                    );
-
-
-                if (catTask) {
-
-                    catTask.done =
-                        sharedDone;
-
-                }
-
-            }
-        );
-
+    } else {
+        cats.forEach(cat => {
+            const task = storage[cat.id].tasks.find(item => item.id === taskId);
+            if (task) task.shared = false;
+        });
     }
 
+    saveTasksStorage(storage);
 
-    saveTasksStorage(
-        storage
-    );
+    cats.forEach(cat => {
+        const catData = storage[cat.id];
+        if (!catData) return;
 
+        saveTasksToHistory(cat.id, catData.date, catData.tasks);
+    });
 
     closeTaskSettings();
-
-
-    /*
-     * Обновляем экран,
-     * чтобы состояние ⚙ и задачи
-     * сразу изменились.
-     */
-
     renderApp();
 }
 
@@ -1438,180 +586,70 @@ function toggleTaskShared(
 // TOGGLE TASK
 // ========================================
 
-function toggleTask(
-    taskId
-) {
-
+function toggleTask(taskId) {
     const activeCatId =
         typeof getActiveCatId === "function"
             ? getActiveCatId()
             : null;
 
+    if (!activeCatId) return;
 
-    if (!activeCatId) {
-        return;
-    }
+    const storage = getTasksStorage();
+    const catData = storage[activeCatId];
+    if (!catData) return;
 
+    catData.tasks = normalizeTasks(catData.tasks);
 
-    const storage =
-        getTasksStorage();
+    const task = catData.tasks.find(item => item.id === taskId);
+    if (!task) return;
 
-
-    const catData =
-        storage[activeCatId];
-
-
-    if (!catData) {
-        return;
-    }
-
-
-    const task =
-        catData.tasks.find(
-            item =>
-                item.id === taskId
-        );
-
-
-    if (!task) {
-        return;
-    }
-
-
-    const newDoneState =
-        !task.done;
-
-
-    /*
-     * ======================================
-     * ОБЩАЯ ЗАДАЧА
-     * ======================================
-     */
+    const newDoneState = !task.done;
 
     if (task.shared === true) {
+        const cats = typeof getCats === "function" ? getCats() : [];
 
-        const cats =
-            typeof getCats === "function"
-                ? getCats()
-                : [];
-
-
-        cats.forEach(
-            cat => {
-
-                if (!storage[cat.id]) {
-
-                    storage[cat.id] = {
-
-                        date:
-                            getTodayKey(),
-
-                        tasks:
-                            getDefaultTasks()
-
-                    };
-
-                }
-
-
-                const catTask =
-                    storage[cat.id]
-                        .tasks
-                        .find(
-                            item =>
-                                item.id ===
-                                taskId
-                        );
-
-
-                if (catTask) {
-
-                    catTask.done =
-                        newDoneState;
-
-                    catTask.shared =
-                        true;
-
-                }
-
+        cats.forEach(cat => {
+            if (!storage[cat.id]) {
+                storage[cat.id] = {
+                    date: getTodayKey(),
+                    tasks: getDefaultTasks()
+                };
             }
-        );
+
+            if (storage[cat.id].date !== getTodayKey()) {
+                storage[cat.id] = {
+                    date: getTodayKey(),
+                    tasks: getDefaultTasks()
+                };
+            }
+
+            storage[cat.id].tasks = normalizeTasks(storage[cat.id].tasks);
+
+            const catTask = storage[cat.id].tasks.find(item => item.id === taskId);
+            if (catTask) {
+                catTask.shared = true;
+                catTask.done = newDoneState;
+            }
+        });
 
     } else {
-
-        /*
-         * ==================================
-         * ИНДИВИДУАЛЬНАЯ ЗАДАЧА
-         * ==================================
-         */
-
-        task.done =
-            newDoneState;
-
+        task.done = newDoneState;
     }
 
+    saveTasksStorage(storage);
 
-    saveTasksStorage(
-        storage
-    );
-
-
-    /*
-     * Сохраняем текущее состояние
-     * в историю активной кошки.
-     */
-
-    saveCurrentTasksToHistory(
-        activeCatId
-    );
-
-
-    /*
-     * Для общей задачи сохраняем
-     * состояние в историю остальных кошек.
-     */
+    const cats = typeof getCats === "function" ? getCats() : [];
 
     if (task.shared === true) {
-
-        const cats =
-            typeof getCats === "function"
-                ? getCats()
-                : [];
-
-
-        cats.forEach(
-            cat => {
-
-                if (
-                    cat.id ===
-                    activeCatId
-                ) {
-
-                    return;
-
-                }
-
-
-                const otherCatData =
-                    storage[cat.id];
-
-
-                if (!otherCatData) {
-                    return;
-                }
-
-
-                saveTasksToHistory(
-                    cat.id,
-                    otherCatData.date,
-                    otherCatData.tasks
-                );
-
+        cats.forEach(cat => {
+            const data = storage[cat.id];
+            if (data) {
+                saveTasksToHistory(cat.id, data.date, data.tasks);
             }
-        );
-
+        });
+    } else {
+        saveTasksToHistory(activeCatId, catData.date, catData.tasks);
     }
-
 
     renderApp();
 }
@@ -1621,34 +659,16 @@ function toggleTask(
 // DELETE CAT TASKS
 // ========================================
 
-function deleteCatTasks(
-    catId
-) {
+function deleteCatTasks(catId) {
+    if (!catId) return;
 
-    if (!catId) {
-        return;
-    }
+    const storage = getTasksStorage();
 
-
-    const storage =
-        getTasksStorage();
-
-
-    if (
-        Object.prototype.hasOwnProperty.call(
-            storage,
-            catId
-        )
-    ) {
-
+    if (Object.prototype.hasOwnProperty.call(storage, catId)) {
         delete storage[catId];
-
     }
 
-
-    saveTasksStorage(
-        storage
-    );
+    saveTasksStorage(storage);
 }
 
 
@@ -1657,32 +677,14 @@ function deleteCatTasks(
 // ========================================
 
 function getTodayKey() {
-
-    return formatDateKey(
-        new Date()
-    );
+    return formatDateKey(new Date());
 }
 
 
 function formatDateKey(date) {
-
     return [
-
         date.getFullYear(),
-
-        String(
-            date.getMonth() + 1
-        ).padStart(
-            2,
-            "0"
-        ),
-
-        String(
-            date.getDate()
-        ).padStart(
-            2,
-            "0"
-        )
-
+        String(date.getMonth() + 1).padStart(2, "0"),
+        String(date.getDate()).padStart(2, "0")
     ].join("-");
 }
