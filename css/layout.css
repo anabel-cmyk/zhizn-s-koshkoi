@@ -60,11 +60,13 @@
     overflow: hidden;
 }
 
-.header-cat-button img {
+.header-cat-button img,
+.header-menu-button img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
+    border-radius: inherit;
 }
 
 .header-menu-button {
@@ -74,9 +76,10 @@
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    background: transparent;
-    color: var(--text);
-    font-size: 22px;
+    background: var(--text);
+    color: white;
+    font-size: 19px;
+    overflow: hidden;
 }
 
 .header-menu-button:hover,
