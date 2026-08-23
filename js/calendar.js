@@ -70,8 +70,7 @@
     function renderCalendar() {
         const content = document.getElementById("content"); const cats = calendarCats();
         if (!content || !cats.length) return;
-        const id = selectedId(); const title = id === "all" ? "Все кошки" : cats[0].name;
-        content.innerHTML = `<div class="history-header"><button class="back-button" onclick="renderApp()">← Назад</button><h1>Дневник</h1></div>${typeof createDiaryCatSwitcher === "function" ? createDiaryCatSwitcher() : ""}${switcher()}<div class="diary-subtitle">Календарь <strong>${escapeHtml(title)}</strong></div>${healthCalendar(cats)}<button type="button" class="button diary-add-health" onclick="window.openHealthEventForm()">＋ Добавить событие</button>`;
+        content.innerHTML = `<div class="history-header"><button class="back-button" onclick="renderApp()">← Назад</button><h1>Дневник</h1></div>${typeof createDiaryCatSwitcher === "function" ? createDiaryCatSwitcher() : ""}${switcher()}${healthCalendar(cats)}<button type="button" class="button diary-add-health" onclick="window.openHealthEventForm()">＋ Добавить событие</button>`;
     }
     function eventCard(event) {
         const emoji = typeof getHealthEventEmoji === "function" ? getHealthEventEmoji(event) : (event.emoji || "🩺");
