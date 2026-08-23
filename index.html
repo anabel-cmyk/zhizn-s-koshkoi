@@ -19,12 +19,12 @@
 <header class="header">
 <div class="logo">Жизнь с кошкой</div>
 <div class="header-actions">
-<button type="button" id="headerCatProfile" class="cat-icon header-cat-button" onclick="openModalWithCurrentCat()" aria-label="Открыть профиль кошки">🐈</button>
+<button type="button" id="headerCatAvatar" class="cat-icon header-cat-button" onclick="openModalWithCurrentCat()" aria-label="Открыть профиль кошки">🐈</button>
 <button type="button" id="headerMenuButton" class="cat-icon header-menu-button" onclick="toggleHeaderMenu(event)" aria-label="Открыть меню" aria-expanded="false">☰</button>
 </div>
 <div id="headerMenu" class="header-menu" hidden>
 <button type="button" onclick="navigateHeader('home')">🏠 <span>Главная</span></button>
-<button type="button" onclick="navigateHeader('diary')">📖 <span>Дневник</span></button>
+<button type="button" onclick="setDiarySubsection('progress')">📖 <span>Дневник</span></button>
 <button type="button" onclick="navigateHeader('calendar')">📅 <span>Календарь</span></button>
 <button type="button" onclick="navigateHeader('achievements')">🏆 <span>Достижения</span></button>
 </div>
