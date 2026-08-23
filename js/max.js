@@ -4,48 +4,64 @@
 // ========================================
 
 (function () {
-    function getMaxStatus() {
-        const webApp = window.WebApp;
-        const user = webApp?.initDataUnsafe?.user;
+    function getMaxUser() {
+        return window.WebApp?.initDataUnsafe?.user || null;
+    }
 
-        if (!webApp) {
-            return {
-                ok: false,
-                title: "MAX Bridge не найден",
-                text: "Приложение открыто не через MAX или библиотека не загрузилась."
-            };
+    function getMaxUserId() {
+        const user = getMaxUser();
+        if (user?.user_id != null) return user.user_id;
+        if (user?.id != null) return user.id;
+
+        // Fallback: MAX documents the user object inside initData.
+        // We only use this locally for diagnostics; validation will be server-side later.
+        const initData = window.WebApp?.initData || "";
+        try {
+            const params = new URLSearchParams(initData);
+            const rawUser = params.get("user");
+            if (rawUser) {
+                const parsedUser = JSON.parse(rawUser);
+                return parsedUser?.user_id ?? parsedUser?.id ?? null;
+            }
+        } catch (error) {
+            // Diagnostic only — ignore malformed/unavailable initData.
         }
 
-        if (!user) {
-            return {
-                ok: false,
-                title: "MAX подключён, но пользователь не определён",
-                text: "Bridge работает, но данные пользователя не переданы."
-            };
-        }
-
-        const userId = user.user_id ?? user.id ?? null;
-
-        return {
-            ok: Boolean(userId),
-            title: userId ? "MAX подключён ✓" : "MAX подключён, но ID не получен",
-            text: userId
-                ? `Пользователь: ${user.first_name || "без имени"} · ID получен ✓`
-                : `Пользователь: ${user.first_name || "без имени"} · стабильный ID не найден`
-        };
+        return null;
     }
 
     function showMaxDiagnostic() {
-        const result = getMaxStatus();
+        const webApp = window.WebApp;
+        const user = getMaxUser();
+        const userId = getMaxUserId();
         const panel = document.getElementById("maxDiagnosticResult");
         if (!panel) return;
 
+        let title;
+        let text;
+        let ok = false;
+
+        if (!webApp) {
+            title = "MAX Bridge не найден";
+            text = "Приложение открыто не через MAX или библиотека не загрузилась.";
+        } else if (!user) {
+            title = "MAX подключён, но пользователь не определён";
+            text = "Bridge работает, но данные пользователя не переданы.";
+        } else if (!userId) {
+            title = "MAX подключён ✓";
+            text = `Пользователь: ${user.first_name || user.name || "без имени"} · ID пока не найден`;
+        } else {
+            title = "MAX подключён ✓";
+            text = `Пользователь: ${user.first_name || user.name || "без имени"} · ID получен ✓`;
+            ok = true;
+        }
+
         panel.hidden = false;
         panel.innerHTML = `
-            <strong>${result.title}</strong>
-            <span>${result.text}</span>
+            <strong>${title}</strong>
+            <span>${text}</span>
         `;
-        panel.dataset.ok = result.ok ? "true" : "false";
+        panel.dataset.ok = ok ? "true" : "false";
     }
 
     function createDiagnostic() {
