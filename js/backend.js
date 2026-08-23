@@ -67,6 +67,42 @@
         };
     }
 
+    async function loadTaskCompletionsFromBackend(catId = null, date = null) {
+        if (!window.appBackendUser) return { ok: false, skipped: true, completions: [] };
+
+        const targetCatId = catId || (typeof window.getActiveCatId === "function" ? window.getActiveCatId() : null);
+        const targetDate = date || (typeof window.getTodayKey === "function" ? window.getTodayKey() : null);
+        if (!targetCatId || !targetDate) return { ok: false, skipped: true, completions: [] };
+
+        const result = await post(TASKS_URL, {
+            action: "get",
+            initData: getInitData(),
+            catId: targetCatId,
+            date: targetDate
+        });
+
+        const completions = Array.isArray(result.completions) ? result.completions : [];
+        const completedIds = new Set(completions.filter(item => item.completed === true).map(item => String(item.task_id)));
+
+        const storageRaw = localStorage.getItem("dailyTasks");
+        let storage = {};
+        try {
+            storage = storageRaw ? JSON.parse(storageRaw) : {};
+        } catch {
+            storage = {};
+        }
+
+        const catData = storage[targetCatId];
+        if (!catData || !Array.isArray(catData.tasks)) return result;
+
+        catData.tasks.forEach(task => {
+            task.done = completedIds.has(String(task.id));
+        });
+
+        localStorage.setItem("dailyTasks", JSON.stringify(storage));
+        return result;
+    }
+
     async function syncCats() {
         if (!window.appBackendUser || typeof window.getCats !== "function") return;
         try {
@@ -82,6 +118,7 @@
                 const activeRemote = mapped.find(cat => cat.id === activeId);
                 window.setActiveCatId(activeRemote ? activeRemote.id : mapped[0].id);
                 window.maxCatsSyncStatus = "success";
+                await loadTaskCompletionsFromBackend();
                 if (typeof window.renderApp === "function") window.renderApp();
                 return;
             }
@@ -100,6 +137,7 @@
                 }
             }
             window.maxCatsSyncStatus = "success";
+            await loadTaskCompletionsFromBackend();
             if (localCats.length && typeof window.renderApp === "function") window.renderApp();
         } catch (error) {
             console.error("[MAX] Ошибка синхронизации кошек:", error);
@@ -187,6 +225,7 @@
     window.saveCatToBackend = saveCatToBackend;
     window.deleteCatFromBackend = deleteCatFromBackend;
     window.saveTaskCompletionToBackend = saveTaskCompletionToBackend;
+    window.loadTaskCompletionsFromBackend = loadTaskCompletionsFromBackend;
     window.syncCatsWithBackend = syncCats;
 
     // cats.js and tasks.js are loaded immediately before this file.
