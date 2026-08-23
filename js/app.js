@@ -221,6 +221,10 @@ function renderCatDashboard(cat) {
               `
             : "🐈";
 
+    const genderIcon =
+        cat.gender === "Кот" ? "♂" :
+        cat.gender === "Кошка" ? "♀" : "";
+
     content.innerHTML = `
 
         ${createCatSwitcher()}
@@ -238,7 +242,7 @@ function renderCatDashboard(cat) {
             <div class="cat-info">
 
                 <h2>
-                    ${escapeHtml(cat.name)}
+                    ${escapeHtml(cat.name)}${genderIcon ? ` <span class="cat-gender-icon" aria-label="${escapeHtml(cat.gender)}">${genderIcon}</span>` : ""}
                 </h2>
 
                 <p>
