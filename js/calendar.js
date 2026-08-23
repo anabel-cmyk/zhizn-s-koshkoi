@@ -25,6 +25,14 @@
         if (!content || mode !== "progress") return;
         const header = content.querySelector(".history-header");
         if (!header) return;
+
+        // Не показываем вспомогательную подпись старого формата
+        // «История ухода за ...».
+        const subtitle = content.querySelector(".diary-subtitle");
+        if (subtitle && subtitle.textContent.trim().startsWith("История ухода за")) {
+            subtitle.remove();
+        }
+
         const cats = content.querySelector(".diary-cat-switcher");
         let tabs = content.querySelector(".diary-mode-switcher");
         if (!tabs) { const holder = document.createElement("div"); holder.innerHTML = switcher(); tabs = holder.firstElementChild; }
@@ -74,7 +82,12 @@
     window.setDiarySubsection = function (next) {
         mode = next === "calendar" ? "calendar" : "progress";
         if (mode === "calendar") { renderCalendar(); return; }
-        if (typeof window.__diaryOriginalOpenHistory === "function") { window.__diaryOriginalOpenHistory(); setTimeout(ensureSwitcher, 0); }
+        if (typeof window.__diaryOriginalOpenHistory === "function") {
+            window.__diaryOriginalOpenHistory();
+            // Выполняем перестановку сразу после рендера, до следующего кадра.
+            // Это убирает видимое мигание/дёрганье при переключении кошки.
+            ensureSwitcher();
+        }
     };
     window.shiftDiaryHealthMonth = function (delta) {
         const key = getMonthKey(); const [y, m] = key.split("-").map(Number); const d = new Date(y, m - 1 + delta, 1);
@@ -109,7 +122,10 @@
     const original = window.openHistory; window.__diaryOriginalOpenHistory = original;
     window.openHistory = function () {
         if (mode === "calendar") { renderCalendar(); return; }
-        if (typeof window.__diaryOriginalOpenHistory === "function") { window.__diaryOriginalOpenHistory(); setTimeout(ensureSwitcher, 0); }
+        if (typeof window.__diaryOriginalOpenHistory === "function") {
+            window.__diaryOriginalOpenHistory();
+            ensureSwitcher();
+        }
     };
     if (document.readyState !== "loading") setTimeout(ensureSwitcher, 0);
     else document.addEventListener("DOMContentLoaded", () => setTimeout(ensureSwitcher, 0), { once: true });
