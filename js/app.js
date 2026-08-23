@@ -1,107 +1,8 @@
 // ========================================
 // ЖИЗНЬ С КОШКОЙ
 // APP.JS
-// 0.9.4 — запуск, навигация и UI hooks
+// 0.9.6 — запуск, навигация и UI hooks
 // ========================================
-
-const LEGACY_TASK_SHARED_SETTINGS_KEY = "taskSharedSettings";
-
-
-// ========================================
-// LEGACY TASK SETTINGS MIGRATION
-// ========================================
-
-function migrateLegacyTaskSharedSettings() {
-
-    const saved =
-        localStorage.getItem(
-            LEGACY_TASK_SHARED_SETTINGS_KEY
-        );
-
-    if (!saved) {
-        return;
-    }
-
-    const cats =
-        typeof getCats === "function"
-            ? getCats()
-            : [];
-
-    // Если кошек ещё нет, не удаляем старые настройки.
-    // Миграция выполнится после создания первой кошки.
-    if (!cats.length) {
-        return;
-    }
-
-    try {
-
-        const settings =
-            JSON.parse(saved);
-
-        if (
-            !settings ||
-            typeof settings !== "object" ||
-            Array.isArray(settings)
-        ) {
-            localStorage.removeItem(
-                LEGACY_TASK_SHARED_SETTINGS_KEY
-            );
-            return;
-        }
-
-        Object.keys(settings).forEach(
-            taskId => {
-
-                const shared =
-                    settings[taskId] === true;
-
-                cats.forEach(
-                    cat => {
-
-                        if (
-                            typeof getDailyTasks !== "function" ||
-                            typeof saveDailyTasks !== "function"
-                        ) {
-                            return;
-                        }
-
-                        const tasks =
-                            getDailyTasks(cat.id);
-
-                        const task =
-                            tasks.find(
-                                item =>
-                                    item.id === taskId
-                            );
-
-                        if (!task) {
-                            return;
-                        }
-
-                        task.shared = shared;
-
-                        saveDailyTasks(
-                            getTodayKey(),
-                            tasks,
-                            cat.id
-                        );
-                    }
-                );
-            }
-        );
-
-        // После успешной миграции старое хранилище больше не нужно.
-        localStorage.removeItem(
-            LEGACY_TASK_SHARED_SETTINGS_KEY
-        );
-
-    } catch {
-
-        // При повреждённых данных ничего не удаляем,
-        // чтобы не потерять старые настройки.
-
-    }
-}
 
 
 // ========================================
@@ -111,9 +12,6 @@ function migrateLegacyTaskSharedSettings() {
 document.addEventListener("DOMContentLoaded", () => {
 
     migrateOldCat();
-
-    migrateLegacyTaskSharedSettings();
-
     renderApp();
 });
 
