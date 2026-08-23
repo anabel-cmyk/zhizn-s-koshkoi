@@ -2,210 +2,31 @@
    LAYOUT
    ======================================== */
 
-.app {
-    width: 100%;
-    max-width: 480px;
-    min-height: 100vh;
-    margin: 0 auto;
-    padding: 20px 18px 40px;
-}
+.app { width: 100%; max-width: 480px; min-height: 100vh; margin: 0 auto; padding: 20px 18px 40px; }
 
+.header { position: relative; display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; }
+.logo { font-size: 18px; line-height: 1; font-weight: 700; letter-spacing: -0.6px; }
+.header-actions { display: flex; align-items: center; gap: 8px; }
+.cat-icon { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--text); color: white; font-size: 19px; }
+.header-cat-button, .header-menu-button { border: 0; cursor: pointer; font: inherit; }
+.header-cat-button { padding: 0; overflow: hidden; }
+.header-cat-button img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: inherit; }
+.header-menu-button { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--text); color: white; font-size: 18px; overflow: hidden; padding: 0 0 2px; }
+.header-menu-button:hover, .header-menu-button:focus-visible, .header-cat-button:hover, .header-cat-button:focus-visible { opacity: 0.72; }
+.header-menu { position: absolute; z-index: 50; top: calc(100% + 10px); right: 0; width: 210px; padding: 7px; background: var(--surface, #fff); border: 1px solid var(--border, #e7e2da); border-radius: 14px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08); }
+.header-menu[hidden] { display: none; }
+.header-menu button { width: 100%; display: flex; align-items: center; gap: 10px; padding: 11px 12px; border: 0; border-radius: 9px; background: transparent; color: var(--text); text-align: left; font: inherit; cursor: pointer; }
+.header-menu button:hover, .header-menu button:focus-visible { background: #f3f0eb; outline: none; }
+.header-menu button:first-child { margin-top: 0; }
 
-/* ========================================
-   HEADER
-   ======================================== */
+.cat-profile-gender { margin-top: 8px; padding-left: 2px; color: #888; font-size: 12px; line-height: 1.35; }
+.cat-info h2 { display: flex; align-items: center; gap: 6px; }
+.cat-gender-icon { display: inline-flex; align-items: center; justify-content: center; font-size: 15px; line-height: 1; font-weight: 400; color: #777; }
 
-.header {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 32px;
-}
+#content { width: 100%; }
 
-.logo {
-    font-size: 18px;
-    line-height: 1;
-    font-weight: 700;
-    letter-spacing: -0.6px;
-}
+/* Separate achievements page already has its own page title. */
+#content > .history-header + .achievements-section-title { display: none; }
 
-.header-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.cat-icon {
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    background: var(--text);
-    color: white;
-    font-size: 19px;
-}
-
-.header-cat-button,
-.header-menu-button {
-    border: 0;
-    padding: 0;
-    cursor: pointer;
-    font: inherit;
-}
-
-.header-cat-button {
-    overflow: hidden;
-}
-
-.header-cat-button img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    border-radius: inherit;
-}
-
-.header-menu-button {
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    background: var(--text);
-    color: white;
-    font-size: 18px;
-    overflow: hidden;
-}
-
-.header-menu-button:hover,
-.header-menu-button:focus-visible,
-.header-cat-button:hover,
-.header-cat-button:focus-visible {
-    opacity: 0.72;
-}
-
-.header-menu {
-    position: absolute;
-    z-index: 50;
-    top: calc(100% + 10px);
-    right: 0;
-    width: 210px;
-    padding: 7px;
-    background: var(--surface, #fff);
-    border: 1px solid var(--border, #e7e2da);
-    border-radius: 14px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-}
-
-.header-menu[hidden] {
-    display: none;
-}
-
-.header-menu button {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 11px 12px;
-    border: 0;
-    border-radius: 9px;
-    background: transparent;
-    color: var(--text);
-    text-align: left;
-    font: inherit;
-    cursor: pointer;
-}
-
-.header-menu button:hover,
-.header-menu button:focus-visible {
-    background: #f3f0eb;
-    outline: none;
-}
-
-.header-menu button:first-child {
-    margin-top: 0;
-}
-
-
-/* ========================================
-   CAT PROFILE META
-   ======================================== */
-
-.cat-profile-gender {
-    margin-top: 8px;
-    padding-left: 2px;
-    color: #888;
-    font-size: 12px;
-    line-height: 1.35;
-}
-
-.cat-info h2 {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.cat-gender-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 15px;
-    line-height: 1;
-    font-weight: 400;
-    color: #777;
-}
-
-
-/* ========================================
-   CONTENT
-   ======================================== */
-
-#content {
-    width: 100%;
-}
-
-
-/* ========================================
-   DESKTOP
-   ======================================== */
-
-@media (min-width: 600px) {
-
-    body {
-        padding: 30px 0;
-    }
-
-    .app {
-        min-height: calc(100vh - 60px);
-    }
-
-}
-
-
-/* ========================================
-   MOBILE
-   ======================================== */
-
-@media (max-width: 480px) {
-
-    .app {
-        padding: 18px 15px 32px;
-    }
-
-    .header {
-        margin-bottom: 28px;
-    }
-
-    .logo {
-        font-size: 18px;
-    }
-
-    .header-menu {
-        width: min(210px, calc(100vw - 30px));
-    }
-
-}
+@media (min-width: 600px) { body { padding: 30px 0; } .app { min-height: calc(100vh - 60px); } }
+@media (max-width: 480px) { .app { padding: 18px 15px 32px; } .header { margin-bottom: 28px; } .logo { font-size: 18px; } .header-menu { width: min(210px, calc(100vw - 30px)); } }
