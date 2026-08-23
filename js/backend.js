@@ -92,7 +92,23 @@
             storage = {};
         }
 
-        const catData = storage[targetCatId];
+        let catData = storage[targetCatId];
+
+        // После синхронизации кошки её серверный UUID может отличаться
+        // от старого локального cat_... ID. В этом случае создаём
+        // сегодняшние задачи уже под серверным ID, не затрагивая остальные данные.
+        if (!catData || !Array.isArray(catData.tasks)) {
+            if (typeof window.getDailyTasks === "function") {
+                window.getDailyTasks(targetCatId);
+                try {
+                    storage = JSON.parse(localStorage.getItem("dailyTasks") || "{}");
+                } catch {
+                    storage = {};
+                }
+                catData = storage[targetCatId];
+            }
+        }
+
         if (!catData || !Array.isArray(catData.tasks)) return result;
 
         catData.tasks.forEach(task => {
