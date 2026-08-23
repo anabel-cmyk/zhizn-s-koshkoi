@@ -264,7 +264,12 @@ function createCatSwitcher() {
     const cats = getCats();
     if (!cats.length) return "";
     const activeId = getActiveCatId();
-    return `<div class="cat-switcher"><div class="cat-switcher-list">${cats.map(cat => `<button class="cat-switcher-item ${cat.id === activeId ? "active" : ""}" onclick="switchCat('${cat.id}')"><span class="cat-switcher-avatar">${cat.avatar ? `<img src="${cat.avatar}" alt="">` : "🐈"}</span><span>${escapeHtml(cat.name)}</span></button>`).join("")}</div><button class="add-cat-button" onclick="addNewCat()">＋ Добавить кошку</button></div>`;
+    const activeCat = cats.find(cat => cat.id === activeId) || cats[0];
+    const gender = activeCat?.gender || "";
+    const genderMarkup = gender
+        ? `<div class="cat-profile-gender">${escapeHtml(gender)}</div>`
+        : "";
+    return `<div class="cat-switcher"><div class="cat-switcher-list">${cats.map(cat => `<button class="cat-switcher-item ${cat.id === activeId ? "active" : ""}" onclick="switchCat('${cat.id}')"><span class="cat-switcher-avatar">${cat.avatar ? `<img src="${cat.avatar}" alt="">` : "🐈"}</span><span>${escapeHtml(cat.name)}</span></button>`).join("")}</div><button class="add-cat-button" onclick="addNewCat()">＋ Добавить кошку</button>${genderMarkup}</div>`;
 }
 
 migrateOldCat();
