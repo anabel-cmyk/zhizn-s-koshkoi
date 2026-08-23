@@ -116,14 +116,6 @@ function renderCatDashboard(cat) {
 
     content.innerHTML = `
 
-        <div class="welcome">
-
-            <h1>
-                Сегодня ${escapeHtml(cat.name)}:
-            </h1>
-
-        </div>
-
         ${createCatSwitcher()}
 
         <div class="card cat-card">
