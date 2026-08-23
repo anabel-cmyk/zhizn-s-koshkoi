@@ -6,6 +6,7 @@
 (function () {
     const AUTH_URL = "https://qligzwdxxytmsflzbpqy.supabase.co/functions/v1/max-auth";
     const CATS_URL = "https://qligzwdxxytmsflzbpqy.supabase.co/functions/v1/max-cats";
+    const TASKS_URL = "https://qligzwdxxytmsflzbpqy.supabase.co/functions/v1/max-tasks";
 
     function getInitData() { return window.WebApp?.initData || ""; }
 
@@ -106,6 +107,18 @@
         }
     }
 
+    async function saveTaskCompletionToBackend(catId, taskId, date, completed) {
+        if (!window.appBackendUser || !catId || !taskId || !date) return { ok: false, skipped: true };
+        return await post(TASKS_URL, {
+            action: "set",
+            initData: getInitData(),
+            catId,
+            taskId: String(taskId),
+            date,
+            completed: completed === true
+        });
+    }
+
     function installCatSaveBridge() {
         if (typeof window.saveCat !== "function" || window.saveCat.__backendWrapped) return;
         const originalSaveCat = window.saveCat;
@@ -137,12 +150,47 @@
         window.saveCat = wrappedSaveCat;
     }
 
+    function installTaskSaveBridge() {
+        if (typeof window.toggleTask !== "function" || window.toggleTask.__backendWrapped) return;
+
+        const originalToggleTask = window.toggleTask;
+        const wrappedToggleTask = function (taskId) {
+            originalToggleTask(taskId);
+
+            try {
+                const catId = typeof window.getActiveCatId === "function"
+                    ? window.getActiveCatId()
+                    : null;
+                const tasks = typeof window.getDailyTasks === "function"
+                    ? window.getDailyTasks(catId)
+                    : [];
+                const task = tasks.find(item => String(item.id) === String(taskId));
+                const date = typeof window.getTodayKey === "function"
+                    ? window.getTodayKey()
+                    : null;
+
+                if (!catId || !task || !date) return;
+
+                saveTaskCompletionToBackend(catId, taskId, date, task.done === true)
+                    .catch(error => console.error("[MAX] Не удалось сохранить отметку задачи:", error));
+            } catch (error) {
+                console.error("[MAX] Ошибка синхронизации задачи:", error);
+            }
+        };
+
+        wrappedToggleTask.__backendWrapped = true;
+        window.toggleTask = wrappedToggleTask;
+    }
+
     window.syncMaxUser = syncMaxUser;
     window.loadCatsFromBackend = loadCatsFromBackend;
     window.saveCatToBackend = saveCatToBackend;
     window.deleteCatFromBackend = deleteCatFromBackend;
+    window.saveTaskCompletionToBackend = saveTaskCompletionToBackend;
     window.syncCatsWithBackend = syncCats;
 
-    // cats.js is loaded immediately before this file, so the bridge can be installed now.
+    // cats.js and tasks.js are loaded immediately before this file.
+    // The bridges are installed here, before app.js starts rendering.
     installCatSaveBridge();
+    installTaskSaveBridge();
 })();
