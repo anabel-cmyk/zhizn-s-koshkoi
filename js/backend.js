@@ -89,8 +89,42 @@
         }
     }
 
+    function installCatSaveBridge() {
+        if (typeof window.saveCat !== "function" || window.saveCat.__backendWrapped) return;
+        const originalSaveCat = window.saveCat;
+        const wrappedSaveCat = async function (event) {
+            const result = await originalSaveCat(event);
+            if (window.appBackendUser && typeof window.getActiveCat === "function") {
+                const cat = window.getActiveCat();
+                if (cat) {
+                    try {
+                        const saved = await saveCatToBackend(cat);
+                        if (saved?.ok && saved.cat) {
+                            const mapped = backendCatToLocal(saved.cat);
+                            const cats = window.getCats();
+                            const index = cats.findIndex(item => item.id === cat.id);
+                            if (index >= 0) cats[index] = mapped;
+                            else cats.push(mapped);
+                            window.saveCats(cats);
+                            window.setActiveCatId(mapped.id);
+                            if (typeof window.renderApp === "function") window.renderApp();
+                        }
+                    } catch (error) {
+                        console.error("[MAX] Не удалось сохранить профиль кошки на сервере:", error);
+                    }
+                }
+            }
+            return result;
+        };
+        wrappedSaveCat.__backendWrapped = true;
+        window.saveCat = wrappedSaveCat;
+    }
+
     window.syncMaxUser = syncMaxUser;
     window.loadCatsFromBackend = loadCatsFromBackend;
     window.saveCatToBackend = saveCatToBackend;
     window.syncCatsWithBackend = syncCats;
+
+    // cats.js is loaded immediately before this file, so the bridge can be installed now.
+    installCatSaveBridge();
 })();
