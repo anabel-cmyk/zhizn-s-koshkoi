@@ -24,10 +24,14 @@
             };
         }
 
+        const userId = user.user_id ?? user.id ?? null;
+
         return {
-            ok: true,
-            title: "MAX подключён ✓",
-            text: `Пользователь определён: ${user.first_name || "без имени"}`
+            ok: Boolean(userId),
+            title: userId ? "MAX подключён ✓" : "MAX подключён, но ID не получен",
+            text: userId
+                ? `Пользователь: ${user.first_name || "без имени"} · ID получен ✓`
+                : `Пользователь: ${user.first_name || "без имени"} · стабильный ID не найден`
         };
     }
 
