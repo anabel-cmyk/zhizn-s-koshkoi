@@ -1,7 +1,7 @@
 // ЖИЗНЬ С КОШКОЙ
 // CALENDAR.JS
 // 0.9.5
-// Presentation layer: care data comes from diary/history, medical data from health.js.
+// Presentation layer: calendar shows only veterinary and related health events.
 (function () {
     let mode = "progress";
     let healthMonth = null;
@@ -41,17 +41,6 @@
         });
         return result;
     }
-    function getCareEventsForDate(cats, date) {
-        const history = typeof getHistory === "function" ? getHistory() : {};
-        const result = [];
-        cats.forEach(cat => {
-            const catHistory = typeof getCatHistory === "function" ? getCatHistory(history, cat.id) : (history[cat.id] || {});
-            (catHistory?.[date]?.tasks || []).forEach(task => {
-                if (task.done === true) result.push({ id: `care_${cat.id}_${date}_${task.id}`, type: "care", title: task.name || "Уход", emoji: task.icon || "🐾", catId: cat.id, catName: cat.name });
-            });
-        });
-        return result;
-    }
     function healthCalendar(cats) {
         const key = getMonthKey(); healthMonth = key; window.diaryHealthMonth = key;
         const [year, month] = key.split("-").map(Number);
@@ -63,8 +52,8 @@
         for (let i = 0; i < offset; i++) cells.push(`<div class="diary-health-day empty"></div>`);
         for (let d = 1; d <= days; d++) {
             const date = `${key}-${String(d).padStart(2, "0")}`;
-            const events = [...healthEvents.filter(e => e.date === date || e.nextDate === date), ...getCareEventsForDate(cats, date)];
-            const emojis = [...new Set(events.map(e => e.type === "care" ? e.emoji : (typeof getHealthEventEmoji === "function" ? getHealthEventEmoji(e) : (e.emoji || "🩺"))))];
+            const events = healthEvents.filter(e => e.date === date || e.nextDate === date);
+            const emojis = [...new Set(events.map(e => typeof getHealthEventEmoji === "function" ? getHealthEventEmoji(e) : (e.emoji || "🩺")))];
             cells.push(`<button type="button" class="diary-health-day ${date === getTodayKey() ? "today" : ""} ${events.length ? "has-events" : ""}" onclick="window.openDiaryHealthDate('${date}')"><span>${d}</span>${emojis.length ? `<small>${emojis.join("")}</small>` : ""}</button>`);
         }
         const monthName = new Intl.DateTimeFormat("ru-RU", { month: "long", year: "numeric" }).format(first);
@@ -77,11 +66,10 @@
         content.innerHTML = `<div class="history-header"><button class="back-button" onclick="renderApp()">← Назад</button><h1>Дневник</h1></div>${typeof createDiaryCatSwitcher === "function" ? createDiaryCatSwitcher() : ""}${switcher()}<div class="diary-subtitle">Календарь <strong>${escapeHtml(title)}</strong></div>${healthCalendar(cats)}<button type="button" class="button diary-add-health" onclick="window.openHealthEventForm()">＋ Добавить событие</button>`;
     }
     function eventCard(event) {
-        const emoji = event.type === "care" ? event.emoji : (typeof getHealthEventEmoji === "function" ? getHealthEventEmoji(event) : (event.emoji || "🩺"));
+        const emoji = typeof getHealthEventEmoji === "function" ? getHealthEventEmoji(event) : (event.emoji || "🩺");
         const title = event.title || (typeof getHealthEventTypeLabel === "function" ? getHealthEventTypeLabel(event.type) : "Медицинское событие");
         const cat = selectedId() === "all" ? `<small class="history-cat-name">${escapeHtml(event.catName || "")}</small>` : "";
-        const editable = event.type !== "care";
-        return `<div class="card health-event-card ${editable ? "calendar-editable-event" : ""}" ${editable ? `onclick="window.openHealthEventForm('${event.catId}','${event.id}')"` : ""}><div><strong>${escapeHtml(emoji)} ${escapeHtml(title)}</strong>${cat}${event.note ? `<div class="health-event-note">${escapeHtml(event.note)}</div>` : ""}</div><div>${event.nextDate ? `<small>Следующая: ${typeof formatHealthShortDate === "function" ? formatHealthShortDate(event.nextDate) : event.nextDate}</small>` : ""}</div></div>`;
+        return `<div class="card health-event-card calendar-editable-event" onclick="window.openHealthEventForm('${event.catId}','${event.id}')"><div><strong>${escapeHtml(emoji)} ${escapeHtml(title)}</strong>${cat}${event.note ? `<div class="health-event-note">${escapeHtml(event.note)}</div>` : ""}</div><div>${event.nextDate ? `<small>Следующая: ${typeof formatHealthShortDate === "function" ? formatHealthShortDate(event.nextDate) : event.nextDate}</small>` : ""}</div></div>`;
     }
     window.setDiarySubsection = function (next) {
         mode = next === "calendar" ? "calendar" : "progress";
@@ -94,7 +82,7 @@
     };
     window.openDiaryHealthDate = function (date) {
         const cats = calendarCats();
-        const events = [...getHealthEventsForCats(cats).filter(e => e.date === date || e.nextDate === date), ...getCareEventsForDate(cats, date)];
+        const events = getHealthEventsForCats(cats).filter(e => e.date === date || e.nextDate === date);
         const target = document.getElementById("diaryHealthDateEvents"); if (!target) return;
         const title = typeof formatHealthDate === "function" ? formatHealthDate(date) : date;
         target.innerHTML = `<div class="section-title">${escapeHtml(title)}</div>${events.length ? events.map(eventCard).join("") : `<div class="card health-empty">На этот день событий нет.</div>`}`;
