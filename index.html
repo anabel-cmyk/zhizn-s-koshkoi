@@ -52,15 +52,6 @@
 <script src="js/health.js?v=0.9.8"></script>
 <script src="js/max.js?v=0.9.8"></script>
 <script src="js/backend.js?v=0.9.8"></script>
-<script src="js/app.js?v=0.9.8"></script>
-<script src="js/task-sync.js?v=0.9.8"></script>
-<script>
-window.addEventListener("load", async function () {
-    if (typeof window.initTaskSync === "function") {
-        await window.initTaskSync();
-        if (typeof window.renderApp === "function") window.renderApp();
-    }
-});
-</script>
+<script src="js/bootstrap.js?v=0.9.8"></script>
 </body>
 </html>
