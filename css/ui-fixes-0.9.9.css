@@ -1,0 +1,29 @@
+/* ========================================
+   UI FIXES 0.9.9
+   Small visual fixes only.
+   ======================================== */
+
+/* Profile/event modal close button: center the × glyph inside its circle. */
+.modal-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    line-height: 1;
+    font-family: inherit;
+}
+
+/* Event note: keep the optional placeholder visually centered while empty. */
+#calendarEventNote.note-placeholder-centered {
+    min-height: 96px;
+    padding: 30px 15px 14px;
+    box-sizing: border-box;
+    line-height: 1.45;
+}
+
+#calendarEventNote.note-placeholder-centered.has-value,
+#calendarEventNote.note-placeholder-centered:focus.has-value {
+    padding: 12px 15px;
+}
