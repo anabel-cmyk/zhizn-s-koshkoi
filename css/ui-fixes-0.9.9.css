@@ -28,11 +28,20 @@
     transform: translateY(-1px);
 }
 
-/* Secondary buttons must remain clearly visible on the beige background. */
+/* Restore the original quiet secondary-button treatment. */
 .button.button-secondary {
     background: var(--soft);
-    color: var(--text);
-    border: 1px solid var(--border);
+    color: #777;
+    border: none;
+}
+
+/* Progress fills use the same dark tone as the progress number. */
+.history-progress-fill {
+    background: var(--text);
+}
+
+.history-progress-fill.goal-reached {
+    background: var(--text);
 }
 
 /* Event note: match the visual treatment of the date/type fields above. */
