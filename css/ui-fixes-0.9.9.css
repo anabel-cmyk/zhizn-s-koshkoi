@@ -2,7 +2,7 @@
    UI FIXES 0.9.9
    ======================================== */
 
-/* Profile/event modal close button */
+/* Profile/event modal close button: center the glyph itself, not the font box. */
 .modal-close {
     display: inline-flex;
     align-items: center;
@@ -10,9 +10,29 @@
     width: 36px;
     height: 36px;
     padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: var(--soft);
+    color: var(--text);
+    font-size: 0;
     line-height: 1;
     font-family: inherit;
-    transform: translateY(-2px);
+    transform: none;
+}
+
+.modal-close::before {
+    content: "×";
+    display: block;
+    font-size: 24px;
+    line-height: 1;
+    transform: translateY(-1px);
+}
+
+/* Secondary buttons must remain clearly visible on the beige background. */
+.button.button-secondary {
+    background: var(--soft);
+    color: var(--text);
+    border: 1px solid var(--border);
 }
 
 /* Event note: match the visual treatment of the date/type fields above. */
