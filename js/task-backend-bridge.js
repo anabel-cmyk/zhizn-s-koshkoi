@@ -1,5 +1,5 @@
 // ========================================
-// TASK BACKEND BRIDGE — 1.0.2
+// TASK BACKEND BRIDGE — 1.0.3
 // Надёжная синхронизация локальных отметок задач
 // с Supabase для вечерних напоминаний.
 // ========================================
@@ -7,7 +7,6 @@
 (function () {
     async function ensureBackendReady() {
         if (window.appBackendUser) return true;
-
         if (typeof window.syncMaxUser !== "function") return false;
 
         try {
@@ -17,6 +16,32 @@
             console.error("[BACKEND] Не удалось авторизовать пользователя:", error);
             return false;
         }
+    }
+
+    async function resolveServerCatId(localCatId) {
+        if (!localCatId) return null;
+
+        const cats = typeof window.getCats === "function" ? window.getCats() : [];
+        const localCat = cats.find(cat => String(cat.id) === String(localCatId));
+
+        // Уже серверный UUID.
+        if (localCat?.serverId) return localCat.serverId;
+        if (localCatId && !String(localCatId).startsWith("cat_")) {
+            const remote = await window.loadCatsFromBackend?.();
+            if (remote?.ok && Array.isArray(remote.cats) && remote.cats.some(cat => String(cat.id) === String(localCatId))) {
+                return localCatId;
+            }
+        }
+
+        const remote = await window.loadCatsFromBackend?.();
+        if (!remote?.ok || !Array.isArray(remote.cats)) return null;
+
+        const match = remote.cats.find(cat =>
+            (localCat && cat.name === localCat.name) ||
+            (localCat?.serverId && String(cat.id) === String(localCat.serverId))
+        );
+
+        return match?.id || null;
     }
 
     async function syncTodayTasks() {
@@ -35,18 +60,32 @@
             return false;
         }
 
-        let found = false;
         const requests = [];
+        let found = false;
 
-        Object.keys(storage).forEach(catId => {
-            const catData = storage[catId];
-            if (!catData || catData.date !== date || !Array.isArray(catData.tasks)) return;
+        for (const localCatId of Object.keys(storage)) {
+            const catData = storage[localCatId];
+            if (!catData || catData.date !== date || !Array.isArray(catData.tasks)) continue;
 
-            catData.tasks.forEach(task => {
-                found = true;
+            const serverCatId = await resolveServerCatId(localCatId);
+            if (!serverCatId) {
+                console.warn("[BACKEND] Не найден серверный ID кошки:", localCatId);
+                continue;
+            }
+
+            found = true;
+
+            // Переносим локальные данные под серверный ID, чтобы следующие
+            // операции сразу использовали правильный ключ.
+            if (serverCatId !== localCatId && !storage[serverCatId]) {
+                storage[serverCatId] = catData;
+                delete storage[localCatId];
+            }
+
+            for (const task of catData.tasks) {
                 requests.push(
                     window.saveTaskCompletionToBackend(
-                        catId,
+                        serverCatId,
                         task.id,
                         date,
                         task.done === true
@@ -54,9 +93,10 @@
                         console.error("[BACKEND] Не удалось синхронизировать задачу:", error);
                     })
                 );
-            });
-        });
+            }
+        }
 
+        localStorage.setItem("dailyTasks", JSON.stringify(storage));
         await Promise.all(requests);
         return found;
     }
@@ -64,14 +104,10 @@
     function syncWhenReady(attempt = 0) {
         syncTodayTasks().then(done => {
             if (done) return;
-            if (attempt < 20) {
-                setTimeout(() => syncWhenReady(attempt + 1), 500);
-            }
+            if (attempt < 20) setTimeout(() => syncWhenReady(attempt + 1), 500);
         }).catch(error => {
             console.error("[BACKEND] Ошибка синхронизации задач:", error);
-            if (attempt < 20) {
-                setTimeout(() => syncWhenReady(attempt + 1), 500);
-            }
+            if (attempt < 20) setTimeout(() => syncWhenReady(attempt + 1), 500);
         });
     }
 
