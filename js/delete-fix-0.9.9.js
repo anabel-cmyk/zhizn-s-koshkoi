@@ -1,11 +1,8 @@
 // ========================================
 // PROFILE DELETE FIX 0.9.9
-// MAX-safe deletion
+// MAX-safe deletion with confirmation
 // ========================================
 
-// MAX WebView does not need a separate database for the current prototype:
-// profiles are stored in localStorage, exactly like the browser version.
-// Do not use window.confirm() or a two-step button here.
 function deleteCurrentCat() {
     const targetId =
         (typeof profileEditingCatId !== "undefined" && profileEditingCatId) ||
@@ -14,10 +11,15 @@ function deleteCurrentCat() {
 
     if (!targetId || typeof getCats !== "function") return false;
 
+    const confirmed = window.confirm(
+        "Удалить профиль кошки? Все связанные данные и записи дневника будут удалены."
+    );
+
+    if (!confirmed) return false;
+
     const cats = getCats();
     const updatedCats = cats.filter(cat => cat.id !== targetId);
 
-    // Nothing to delete.
     if (updatedCats.length === cats.length) return false;
 
     try {
@@ -42,7 +44,6 @@ function deleteCurrentCat() {
         if (typeof renderApp === "function") renderApp();
     } catch (error) {
         console.error("Profile deletion failed", error);
-        return false;
     }
 
     return false;
