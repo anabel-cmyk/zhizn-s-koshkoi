@@ -42,8 +42,12 @@
     min-height: 48px;
     height: 48px;
     margin: 0;
-    padding: 15px 18px;
+    padding: 0 18px;
     box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
 }
 
 .delete-confirm-danger {
