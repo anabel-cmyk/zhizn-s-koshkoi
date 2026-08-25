@@ -2,7 +2,7 @@
    UI FIXES 0.9.9
    ======================================== */
 
-/* Profile/event modal close button: center the glyph itself, not the font box. */
+/* Profile/event modal close button */
 .modal-close {
     display: inline-flex;
     align-items: center;
@@ -44,20 +44,22 @@
     background: var(--text);
 }
 
-/* Event note: match the visual treatment of the date/type fields above. */
+/* Event note: compact, like the regular fields above it. */
 #calendarEventNote.note-placeholder-centered {
     width: 100%;
-    min-height: 104px;
+    height: 48px;
+    min-height: 48px;
     box-sizing: border-box;
     margin: 0;
-    padding: 16px;
+    padding: 12px 15px;
     border: 1px solid var(--border);
     border-radius: 14px;
     background: var(--surface);
     color: var(--text);
     font: inherit;
-    line-height: 1.45;
-    resize: vertical;
+    line-height: 1.35;
+    resize: none;
+    overflow-y: auto;
 }
 
 #calendarEventNote.note-placeholder-centered::placeholder {
@@ -71,5 +73,7 @@
 }
 
 #calendarEventNote.note-placeholder-centered.has-value {
-    padding: 16px;
+    height: 48px;
+    min-height: 48px;
+    padding: 12px 15px;
 }
