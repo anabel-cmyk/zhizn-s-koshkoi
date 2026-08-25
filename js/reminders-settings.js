@@ -1,11 +1,12 @@
 // ========================================
-// REMINDERS SETTINGS — 1.0.1
+// REMINDERS SETTINGS — 1.0.2
 // MAX + Telegram
 // ========================================
 
 (function () {
     const SETTINGS_URL = "https://qligzwdxxytmsflzbpqy.supabase.co/functions/v1/reminder-settings";
     const AUTH_URL = "https://qligzwdxxytmsflzbpqy.supabase.co/functions/v1/max-auth";
+    const LOCAL_KEY = "reminderSettings";
 
     function getPlatform() {
         return window.Telegram?.WebApp?.initData ? "telegram" : "max";
@@ -15,6 +16,21 @@
         return getPlatform() === "telegram"
             ? window.Telegram.WebApp.initData || ""
             : window.WebApp?.initData || "";
+    }
+
+    function getLocalSettings() {
+        try {
+            const raw = localStorage.getItem(`${LOCAL_KEY}_${getPlatform()}`);
+            return raw ? JSON.parse(raw) : null;
+        } catch (_) {
+            return null;
+        }
+    }
+
+    function setLocalSettings(settings) {
+        try {
+            localStorage.setItem(`${LOCAL_KEY}_${getPlatform()}`, JSON.stringify(settings));
+        } catch (_) {}
     }
 
     async function post(url, body) {
@@ -57,6 +73,17 @@
             timezone,
             catId: null
         });
+    }
+
+    function applySettings(settings) {
+        const enabledInput = document.getElementById("reminderEnabled");
+        const timeInput = document.getElementById("reminderTime");
+        const timeRow = document.getElementById("reminderTimeRow");
+        if (!enabledInput || !timeInput || !timeRow || !settings) return;
+
+        enabledInput.checked = settings.enabled === true;
+        timeInput.value = String(settings.reminder_time || settings.reminderTime || "20:00").slice(0, 5);
+        timeRow.hidden = !enabledInput.checked;
     }
 
     function renderRemindersSettings() {
@@ -107,17 +134,20 @@
             timeRow.hidden = !enabledInput.checked;
         }
 
+        // Сначала восстанавливаем локально, чтобы MAX не показывал исходное состояние.
+        applySettings(getLocalSettings());
+
         try {
             const result = await getSettings();
-            const settings = result.settings;
-            if (settings) {
-                enabledInput.checked = settings.enabled === true;
-                timeInput.value = String(settings.reminder_time || "20:00").slice(0, 5);
+            if (result.settings) {
+                applySettings(result.settings);
+                setLocalSettings(result.settings);
+            } else {
+                syncTimeVisibility();
             }
-            syncTimeVisibility();
         } catch (error) {
             syncTimeVisibility();
-            if (status) status.textContent = "Не удалось загрузить настройки.";
+            if (status) status.textContent = "Не удалось проверить настройки на сервере.";
             console.error("[REMINDERS] Не удалось загрузить настройки:", error);
         }
 
@@ -126,11 +156,18 @@
         document.getElementById("saveReminderSettings")?.addEventListener("click", async () => {
             const button = document.getElementById("saveReminderSettings");
             const currentStatus = document.getElementById("reminderSettingsStatus");
+            const enabled = enabledInput.checked;
+            const reminderTime = timeInput.value || "20:00";
+            const localSettings = { enabled, reminderTime };
+
             button.disabled = true;
             if (currentStatus) currentStatus.textContent = "Сохраняем…";
 
             try {
-                await saveSettings(enabledInput.checked, timeInput.value || "20:00");
+                const result = await saveSettings(enabled, reminderTime);
+                const saved = result.settings || localSettings;
+                setLocalSettings(saved);
+                applySettings(saved);
                 if (currentStatus) currentStatus.textContent = "Настройки сохранены.";
             } catch (error) {
                 if (currentStatus) currentStatus.textContent = "Не удалось сохранить настройки.";
