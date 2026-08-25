@@ -1,29 +1,32 @@
 // ========================================
-// TASK BACKEND BRIDGE — 1.0.0
+// TASK BACKEND BRIDGE — 1.0.1
 // Надёжная синхронизация локальных отметок задач
 // с Supabase для вечерних напоминаний.
 // ========================================
 
 (function () {
     function syncTodayTasks() {
-        if (typeof window.saveTaskCompletionToBackend !== "function") return;
-        if (!window.appBackendUser) return;
+        if (typeof window.saveTaskCompletionToBackend !== "function") return false;
+        if (!window.appBackendUser) return false;
 
         const date = window.getTodayKey?.();
-        if (!date) return;
+        if (!date) return false;
 
         let storage = {};
         try {
             storage = JSON.parse(localStorage.getItem("dailyTasks") || "{}");
         } catch {
-            return;
+            return false;
         }
+
+        let found = false;
 
         Object.keys(storage).forEach(catId => {
             const catData = storage[catId];
             if (!catData || catData.date !== date || !Array.isArray(catData.tasks)) return;
 
             catData.tasks.forEach(task => {
+                found = true;
                 window.saveTaskCompletionToBackend(
                     catId,
                     task.id,
@@ -34,6 +37,15 @@
                 });
             });
         });
+
+        return found;
+    }
+
+    function syncWhenReady(attempt = 0) {
+        if (syncTodayTasks()) return;
+        if (attempt < 20) {
+            setTimeout(() => syncWhenReady(attempt + 1), 250);
+        }
     }
 
     function install() {
@@ -43,11 +55,11 @@
         document.addEventListener("click", event => {
             const check = event.target.closest?.(".check");
             if (!check) return;
-
-            // toggleTask() сначала завершает локальное сохранение и renderApp(),
-            // поэтому ждём следующий кадр, чтобы прочитать уже обновлённое состояние.
-            setTimeout(syncTodayTasks, 0);
+            setTimeout(() => syncWhenReady(), 50);
         });
+
+        setTimeout(() => syncWhenReady(), 1000);
+        setTimeout(() => syncWhenReady(), 3000);
     }
 
     if (document.readyState === "loading") {
