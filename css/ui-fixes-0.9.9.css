@@ -17,7 +17,6 @@
     font-size: 0;
     line-height: 1;
     font-family: inherit;
-    transform: none;
 }
 
 .modal-close::before {
