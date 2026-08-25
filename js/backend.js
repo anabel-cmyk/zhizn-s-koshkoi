@@ -1,6 +1,6 @@
 // ========================================
 // ЖИЗНЬ С КОШКОЙ
-// BACKEND INTEGRATION — 0.9.8
+// BACKEND INTEGRATION — 0.9.9
 // MAX + Telegram → Supabase
 // ========================================
 
@@ -47,11 +47,20 @@
 
     async function saveCatToBackend(cat) {
         if (!window.appBackendUser) return { ok: false, skipped: true };
-        return await post(CATS_URL, { action: "upsert", initData: getInitData(), platform: getPlatform(), cat: {
-            serverId: cat.serverId || (typeof cat.id === "string" && !cat.id.startsWith("cat_") ? cat.id : null),
-            name: cat.name, gender: cat.gender, birthDate: cat.birthDate,
-            ageValue: cat.ageValue, ageUnit: cat.ageUnit, avatar: cat.avatar
-        }});
+        return await post(CATS_URL, {
+            action: "upsert",
+            initData: getInitData(),
+            platform: getPlatform(),
+            cat: {
+                serverId: cat.serverId || (typeof cat.id === "string" && !cat.id.startsWith("cat_") ? cat.id : null),
+                name: cat.name,
+                gender: cat.gender,
+                birthDate: cat.birthDate,
+                ageValue: cat.ageValue,
+                ageUnit: cat.ageUnit,
+                avatar: cat.avatar
+            }
+        });
     }
 
     async function deleteCatFromBackend(catId) {
@@ -61,12 +70,46 @@
 
     function backendCatToLocal(cat) {
         return {
-            id: cat.id, name: cat.name || "", gender: cat.gender || "",
-            birthDate: cat.birth_date || null, ageValue: cat.age_value ?? null,
-            ageUnit: cat.age_unit || null, avatar: cat.avatar_url || "",
+            id: cat.id,
+            name: cat.name || "",
+            gender: cat.gender || "",
+            birthDate: cat.birth_date || null,
+            ageValue: cat.age_value ?? null,
+            ageUnit: cat.age_unit || null,
+            avatar: cat.avatar_url || "",
             createdAt: cat.created_at || new Date().toISOString(),
             updatedAt: cat.updated_at || new Date().toISOString()
         };
+    }
+
+    function migrateDailyTasksCatIds(localCats, remoteCats) {
+        let storage = {};
+        try {
+            storage = JSON.parse(localStorage.getItem("dailyTasks") || "{}");
+        } catch {
+            return;
+        }
+
+        let changed = false;
+
+        remoteCats.forEach(remoteCat => {
+            const localCat = localCats.find(cat =>
+                cat.serverId === remoteCat.id ||
+                cat.id === remoteCat.id ||
+                cat.name === remoteCat.name
+            );
+            if (!localCat || localCat.id === remoteCat.id) return;
+
+            if (storage[localCat.id] && !storage[remoteCat.id]) {
+                storage[remoteCat.id] = storage[localCat.id];
+                delete storage[localCat.id];
+                changed = true;
+            }
+        });
+
+        if (changed) {
+            localStorage.setItem("dailyTasks", JSON.stringify(storage));
+        }
     }
 
     async function loadTaskCompletionsFromBackend(catId = null, date = null) {
@@ -74,50 +117,93 @@
         const targetCatId = catId || window.getActiveCatId?.();
         const targetDate = date || window.getTodayKey?.();
         if (!targetCatId || !targetDate) return { ok: false, skipped: true, completions: [] };
-        const result = await post(TASKS_URL, { action: "get", initData: getInitData(), platform: getPlatform(), catId: targetCatId, date: targetDate });
-        const completedIds = new Set((result.completions || []).filter(item => item.completed === true).map(item => String(item.task_id)));
+
+        const result = await post(TASKS_URL, {
+            action: "get",
+            initData: getInitData(),
+            platform: getPlatform(),
+            catId: targetCatId,
+            date: targetDate
+        });
+
+        const completedIds = new Set(
+            (result.completions || [])
+                .filter(item => item.completed === true)
+                .map(item => String(item.task_id))
+        );
+
         let storage = {};
-        try { storage = JSON.parse(localStorage.getItem("dailyTasks") || "{}"); } catch { storage = {}; }
+        try {
+            storage = JSON.parse(localStorage.getItem("dailyTasks") || "{}");
+        } catch {
+            storage = {};
+        }
+
         let catData = storage[targetCatId];
         if (!catData?.tasks && typeof window.getDailyTasks === "function") {
             window.getDailyTasks(targetCatId);
-            try { storage = JSON.parse(localStorage.getItem("dailyTasks") || "{}"); } catch { storage = {}; }
+            try {
+                storage = JSON.parse(localStorage.getItem("dailyTasks") || "{}");
+            } catch {
+                storage = {};
+            }
             catData = storage[targetCatId];
         }
+
         if (!catData?.tasks) return result;
-        catData.tasks.forEach(task => { task.done = completedIds.has(String(task.id)); });
+
+        catData.tasks.forEach(task => {
+            task.done = completedIds.has(String(task.id));
+        });
+
         localStorage.setItem("dailyTasks", JSON.stringify(storage));
         return result;
     }
 
     async function syncCats() {
         if (!window.appBackendUser || typeof window.getCats !== "function") return;
+
         try {
             const result = await loadCatsFromBackend();
             if (!result?.ok) return;
+
             const remoteCats = Array.isArray(result.cats) ? result.cats : [];
             const localCats = window.getCats();
             const activeId = window.getActiveCatId?.();
+
             if (remoteCats.length) {
+                migrateDailyTasksCatIds(localCats, remoteCats);
+
                 const mapped = remoteCats.map(backendCatToLocal);
                 window.saveCats(mapped);
-                const activeRemote = mapped.find(cat => cat.id === activeId);
+
+                const activeRemote = mapped.find(cat =>
+                    cat.id === activeId ||
+                    localCats.some(localCat =>
+                        localCat.id === activeId &&
+                        (localCat.serverId === cat.id || localCat.name === cat.name)
+                    )
+                );
+
                 window.setActiveCatId(activeRemote ? activeRemote.id : mapped[0].id);
                 window.maxCatsSyncStatus = "success";
                 await loadTaskCompletionsFromBackend();
                 return;
             }
+
             for (const localCat of localCats) {
                 const saved = await saveCatToBackend(localCat);
                 if (saved?.ok && saved.cat) {
                     const mapped = backendCatToLocal(saved.cat);
                     const current = window.getCats();
                     const index = current.findIndex(cat => cat.id === localCat.id);
-                    if (index >= 0) current[index] = mapped; else current.push(mapped);
+                    if (index >= 0) current[index] = mapped;
+                    else current.push(mapped);
                     window.saveCats(current);
                     if (activeId === localCat.id) window.setActiveCatId(mapped.id);
                 }
             }
+
             window.maxCatsSyncStatus = "success";
             await loadTaskCompletionsFromBackend();
         } catch (error) {
@@ -127,15 +213,29 @@
     }
 
     async function saveTaskCompletionToBackend(catId, taskId, date, completed) {
-        if (!window.appBackendUser || !catId || !taskId || !date) return { ok: false, skipped: true };
-        return await post(TASKS_URL, { action: "set", initData: getInitData(), platform: getPlatform(), catId, taskId: String(taskId), date, completed: completed === true });
+        if (!window.appBackendUser || !catId || !taskId || !date) {
+            return { ok: false, skipped: true };
+        }
+
+        return await post(TASKS_URL, {
+            action: "set",
+            initData: getInitData(),
+            platform: getPlatform(),
+            catId,
+            taskId: String(taskId),
+            date,
+            completed: completed === true
+        });
     }
 
     function installCatSaveBridge() {
         if (typeof window.saveCat !== "function" || window.saveCat.__backendWrapped) return;
+
         const originalSaveCat = window.saveCat;
+
         const wrappedSaveCat = async function (event) {
             const result = await originalSaveCat(event);
+
             if (window.appBackendUser && typeof window.getActiveCat === "function") {
                 const cat = window.getActiveCat();
                 if (cat) {
@@ -145,39 +245,50 @@
                             const mapped = backendCatToLocal(saved.cat);
                             const cats = window.getCats();
                             const index = cats.findIndex(item => item.id === cat.id);
-                            if (index >= 0) cats[index] = mapped; else cats.push(mapped);
+                            if (index >= 0) cats[index] = mapped;
+                            else cats.push(mapped);
                             window.saveCats(cats);
                             window.setActiveCatId(mapped.id);
                             window.renderApp?.();
                             window.renderCatGenderMeta?.();
                         }
-                    } catch (error) { console.error("[BACKEND] Не удалось сохранить профиль:", error); }
+                    } catch (error) {
+                        console.error("[BACKEND] Не удалось сохранить профиль:", error);
+                    }
                 }
             }
+
             return result;
         };
+
         wrappedSaveCat.__backendWrapped = true;
         window.saveCat = wrappedSaveCat;
     }
 
     function installTaskSaveBridge() {
         if (typeof window.toggleTask !== "function" || window.toggleTask.__backendWrapped) return;
+
         const originalToggleTask = window.toggleTask;
+
         const wrappedToggleTask = function (taskId) {
             originalToggleTask(taskId);
-            // toggleTask() перерисовывает карточку кошки, поэтому декоративный
-            // индикатор пола нужно вернуть после renderApp().
             window.renderCatGenderMeta?.();
+
             try {
                 const catId = window.getActiveCatId?.();
                 const tasks = window.getDailyTasks?.(catId) || [];
                 const task = tasks.find(item => String(item.id) === String(taskId));
                 const date = window.getTodayKey?.();
+
                 if (!catId || !task || !date) return;
+
                 saveTaskCompletionToBackend(catId, taskId, date, task.done === true)
                     .catch(error => console.error("[BACKEND] Не удалось сохранить отметку:", error));
-            } catch (error) { console.error("[BACKEND] Ошибка синхронизации задачи:", error); }
+            } catch (error) {
+                console.error("[BACKEND] Ошибка синхронизации задачи:", error);
+            }
         };
+
         wrappedToggleTask.__backendWrapped = true;
         window.toggleTask = wrappedToggleTask;
     }
