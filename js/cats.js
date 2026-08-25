@@ -241,16 +241,46 @@ function addNewCat() { openModal(); }
 
 function deleteCurrentCat() {
     const cat = getActiveCat();
-    if (!cat) return;
+    if (!cat) return false;
+
     const cats = getCats();
-    if (!confirm(cats.length === 1 ? `Удалить профиль ${cat.name}? После удаления кошек в приложении не останется.` : `Удалить профиль ${cat.name}?`)) return;
+    const message = cats.length === 1
+        ? `Удалить профиль ${cat.name}? После удаления кошек в приложении не останется.`
+        : `Удалить профиль ${cat.name}?`;
+
+    let confirmed = true;
+    try {
+        confirmed = window.confirm(message);
+    } catch (error) {
+        console.warn("Confirm dialog unavailable", error);
+    }
+    if (!confirmed) return false;
+
     const updatedCats = cats.filter(item => item.id !== cat.id);
-    saveCats(updatedCats);
-    if (typeof deleteCatTasks === "function") deleteCatTasks(cat.id);
-    if (typeof deleteCatHistory === "function") deleteCatHistory(cat.id);
-    if (updatedCats.length) setActiveCatId(updatedCats[0].id); else localStorage.removeItem(ACTIVE_CAT_KEY);
+
+    try {
+        saveCats(updatedCats);
+        if (typeof deleteCatTasks === "function") {
+            try { deleteCatTasks(cat.id); } catch (error) { console.warn("Task cleanup failed", error); }
+        }
+        if (typeof deleteCatHistory === "function") {
+            try { deleteCatHistory(cat.id); } catch (error) { console.warn("History cleanup failed", error); }
+        }
+    } catch (error) {
+        console.error("Cat deletion failed", error);
+        alert("Не удалось удалить профиль. Попробуйте ещё раз.");
+        return false;
+    }
+
+    if (updatedCats.length) {
+        setActiveCatId(updatedCats[0].id);
+    } else {
+        localStorage.removeItem(ACTIVE_CAT_KEY);
+    }
+
     closeModal();
     renderApp();
+    return false;
 }
 
 function switchCat(id) {
