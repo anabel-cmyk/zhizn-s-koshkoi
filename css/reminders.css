@@ -83,6 +83,10 @@
     transform: translateX(20px);
 }
 
+.reminder-time-row[hidden] {
+    display: none;
+}
+
 .reminder-time-row {
     display: flex;
     align-items: center;
@@ -102,7 +106,13 @@
 .reminder-time-input {
     width: 130px;
     height: 48px;
+    min-height: 48px;
+    box-sizing: border-box;
+    padding: 0 14px;
     text-align: center;
+    line-height: 48px;
+    -webkit-appearance: none;
+    appearance: none;
 }
 
 .reminders-card > .button {
