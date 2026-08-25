@@ -1,5 +1,5 @@
 // ========================================
-// REMINDERS SETTINGS — 1.0.0
+// REMINDERS SETTINGS — 1.0.1
 // MAX + Telegram
 // ========================================
 
@@ -82,7 +82,7 @@
                         </label>
                     </div>
 
-                    <div class="reminder-time-row">
+                    <div id="reminderTimeRow" class="reminder-time-row" hidden>
                         <label for="reminderTime">Время</label>
                         <input id="reminderTime" class="input reminder-time-input" type="time" value="20:00">
                     </div>
@@ -99,8 +99,13 @@
     async function loadSettingsIntoPage() {
         const enabledInput = document.getElementById("reminderEnabled");
         const timeInput = document.getElementById("reminderTime");
+        const timeRow = document.getElementById("reminderTimeRow");
         const status = document.getElementById("reminderSettingsStatus");
-        if (!enabledInput || !timeInput) return;
+        if (!enabledInput || !timeInput || !timeRow) return;
+
+        function syncTimeVisibility() {
+            timeRow.hidden = !enabledInput.checked;
+        }
 
         try {
             const result = await getSettings();
@@ -109,10 +114,14 @@
                 enabledInput.checked = settings.enabled === true;
                 timeInput.value = String(settings.reminder_time || "20:00").slice(0, 5);
             }
+            syncTimeVisibility();
         } catch (error) {
+            syncTimeVisibility();
             if (status) status.textContent = "Не удалось загрузить настройки.";
             console.error("[REMINDERS] Не удалось загрузить настройки:", error);
         }
+
+        enabledInput.addEventListener("change", syncTimeVisibility);
 
         document.getElementById("saveReminderSettings")?.addEventListener("click", async () => {
             const button = document.getElementById("saveReminderSettings");
