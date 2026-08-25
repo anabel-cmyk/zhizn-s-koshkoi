@@ -1,0 +1,44 @@
+.delete-confirm-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.28);
+}
+
+.delete-confirm-card {
+    width: min(100%, 360px);
+    box-sizing: border-box;
+    padding: 22px;
+    border-radius: 22px;
+    background: var(--surface);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.14);
+}
+
+.delete-confirm-card h3 {
+    margin: 0 0 8px;
+    font-size: 20px;
+}
+
+.delete-confirm-card p {
+    margin: 0 0 20px;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.delete-confirm-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.delete-confirm-actions .button {
+    flex: 1;
+}
+
+.delete-confirm-danger {
+    background: var(--text);
+}
