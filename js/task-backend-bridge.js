@@ -1,6 +1,6 @@
 // ========================================
-// TASK BACKEND BRIDGE — 1.0.3
-// Надёжная синхронизация локальных отметок задач
+// TASK BACKEND BRIDGE — 1.0.4
+// Синхронизация локальных отметок задач
 // с Supabase для вечерних напоминаний.
 // ========================================
 
@@ -24,7 +24,6 @@
         const cats = typeof window.getCats === "function" ? window.getCats() : [];
         const localCat = cats.find(cat => String(cat.id) === String(localCatId));
 
-        // Уже серверный UUID.
         if (localCat?.serverId) return localCat.serverId;
         if (localCatId && !String(localCatId).startsWith("cat_")) {
             const remote = await window.loadCatsFromBackend?.();
@@ -75,8 +74,6 @@
 
             found = true;
 
-            // Переносим локальные данные под серверный ID, чтобы следующие
-            // операции сразу использовали правильный ключ.
             if (serverCatId !== localCatId && !storage[serverCatId]) {
                 storage[serverCatId] = catData;
                 delete storage[localCatId];
@@ -115,12 +112,11 @@
         if (document.body.__taskBackendBridgeInstalled) return;
         document.body.__taskBackendBridgeInstalled = true;
 
-        document.addEventListener("click", event => {
-            const check = event.target.closest?.(".check");
-            if (!check) return;
-            setTimeout(() => syncWhenReady(), 100);
-        });
-
+        // Важно: изменение true/false уже перехватывает backend.js через
+        // window.toggleTask. Второй click-listener здесь создавал гонку:
+        // после снятия галочки он мог повторно записать старое состояние.
+        // Этот мост теперь отвечает только за первоначальную/периодическую
+        // синхронизацию локальных данных, а не за повторную отправку клика.
         setTimeout(() => syncWhenReady(), 1000);
         setTimeout(() => syncWhenReady(), 3000);
     }
