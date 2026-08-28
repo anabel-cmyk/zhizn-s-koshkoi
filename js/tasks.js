@@ -12,81 +12,29 @@ const TASKS_KEY = "dailyTasks";
 const LEGACY_TASK_SHARED_SETTINGS_KEY = "taskSharedSettings";
 let legacySharedMigrationDone = false;
 
-
-// ========================================
-// DEFAULT TASKS
-// ========================================
-
 function getDefaultTasks() {
     return [
-        {
-            id: "play",
-            icon: "🎾",
-            name: "Поиграть",
-            description: "15–30 минут",
-            frequency: "daily",
-            statistics: "monthly",
-            targetPerWeek: 7,
-            targetPerMonth: 30,
-            shared: false,
-            done: false
-        },
-        {
-            id: "water",
-            icon: "💧",
-            name: "Проверить воду",
-            description: "Свежая вода",
-            frequency: "daily",
-            statistics: "none",
-            targetPerWeek: null,
-            targetPerMonth: null,
-            shared: false,
-            done: false
-        },
-        {
-            id: "teeth",
-            icon: "🦷",
-            name: "Уход за зубами",
-            description: "Регулярный уход",
-            frequency: "weekly",
-            statistics: "monthly",
-            targetPerWeek: 2,
-            targetPerMonth: 8,
-            shared: false,
-            done: false
-        }
+        { id:"play", icon:"🎾", name:"Поиграть", description:"15–30 минут", frequency:"daily", statistics:"monthly", targetPerWeek:7, targetPerMonth:30, shared:false, done:false },
+        { id:"water", icon:"💧", name:"Проверить воду", description:"Свежая вода", frequency:"daily", statistics:"none", targetPerWeek:null, targetPerMonth:null, shared:false, done:false },
+        { id:"teeth", icon:"🦷", name:"Уход за зубами", description:"Регулярный уход", frequency:"weekly", statistics:"monthly", targetPerWeek:2, targetPerMonth:8, shared:false, done:false }
     ];
 }
-
-
-// ========================================
-// STORAGE
-// ========================================
 
 function getTasksStorage() {
     const saved = localStorage.getItem(TASKS_KEY);
     if (!saved) return {};
-
     try {
         const data = JSON.parse(saved);
-        if (!data || typeof data !== "object" || Array.isArray(data)) {
-            return {};
-        }
+        if (!data || typeof data !== "object" || Array.isArray(data)) return {};
         return data;
     } catch {
         return {};
     }
 }
 
-
 function saveTasksStorage(data) {
     localStorage.setItem(TASKS_KEY, JSON.stringify(data));
 }
-
-
-// ========================================
-// LEGACY MIGRATION
-// ========================================
 
 function migrateOldTasks() {
     const saved = localStorage.getItem(TASKS_KEY);
@@ -95,22 +43,12 @@ function migrateOldTasks() {
     try {
         const data = JSON.parse(saved);
 
-        if (
-            data &&
-            typeof data === "object" &&
-            !Array.isArray(data) &&
-            !data.date &&
-            !Array.isArray(data.tasks)
-        ) {
+        if (data && typeof data === "object" && !Array.isArray(data) && !data.date && !Array.isArray(data.tasks)) {
             return;
         }
 
         if (data && data.date && Array.isArray(data.tasks)) {
-            const activeCatId =
-                typeof getActiveCatId === "function"
-                    ? getActiveCatId()
-                    : null;
-
+            const activeCatId = typeof getActiveCatId === "function" ? getActiveCatId() : null;
             if (!activeCatId) return;
 
             saveTasksStorage({
@@ -120,27 +58,17 @@ function migrateOldTasks() {
                 }
             });
         }
-    } catch {
-        // Старые повреждённые данные не должны ломать приложение.
-    }
+    } catch {}
 }
 
-
-// Переносим старый отдельный флаг общей задачи
-// в основной источник данных dailyTasks.
 function migrateLegacySharedSettings() {
     if (legacySharedMigrationDone) return;
-
     legacySharedMigrationDone = true;
 
     const saved = localStorage.getItem(LEGACY_TASK_SHARED_SETTINGS_KEY);
     if (!saved) return;
 
-    const cats =
-        typeof getCats === "function"
-            ? getCats()
-            : [];
-
+    const cats = typeof getCats === "function" ? getCats() : [];
     if (!cats.length) {
         legacySharedMigrationDone = false;
         return;
@@ -159,10 +87,7 @@ function migrateLegacySharedSettings() {
 
         cats.forEach(cat => {
             if (!storage[cat.id]) {
-                storage[cat.id] = {
-                    date: today,
-                    tasks: getDefaultTasks()
-                };
+                storage[cat.id] = { date: today, tasks: getDefaultTasks() };
             }
 
             if (storage[cat.id].date !== today) return;
@@ -171,24 +96,16 @@ function migrateLegacySharedSettings() {
 
             Object.keys(settings).forEach(taskId => {
                 const task = storage[cat.id].tasks.find(item => item.id === taskId);
-                if (task) {
-                    task.shared = settings[taskId] === true;
-                }
+                if (task) task.shared = settings[taskId] === true;
             });
         });
 
         saveTasksStorage(storage);
         localStorage.removeItem(LEGACY_TASK_SHARED_SETTINGS_KEY);
-
     } catch {
         legacySharedMigrationDone = false;
     }
 }
-
-
-// ========================================
-// NORMALIZATION
-// ========================================
 
 function normalizeTasks(tasks) {
     const defaults = getDefaultTasks();
@@ -222,23 +139,11 @@ function normalizeTasks(tasks) {
     return result;
 }
 
-
-// ========================================
-// DAILY TASKS
-// ========================================
-
 function getDailyTasks(catId = null) {
     migrateOldTasks();
     migrateLegacySharedSettings();
 
-    const activeCatId =
-        catId ||
-        (
-            typeof getActiveCatId === "function"
-                ? getActiveCatId()
-                : null
-        );
-
+    const activeCatId = catId || (typeof getActiveCatId === "function" ? getActiveCatId() : null);
     if (!activeCatId) return [];
 
     const today = getTodayKey();
@@ -246,10 +151,7 @@ function getDailyTasks(catId = null) {
     let catData = storage[activeCatId];
 
     if (!catData) {
-        catData = {
-            date: today,
-            tasks: getDefaultTasks()
-        };
+        catData = { date: today, tasks: getDefaultTasks() };
         storage[activeCatId] = catData;
         saveTasksStorage(storage);
         return catData.tasks;
@@ -257,12 +159,7 @@ function getDailyTasks(catId = null) {
 
     if (catData.date !== today) {
         saveTasksToHistory(activeCatId, catData.date, catData.tasks);
-
-        catData = {
-            date: today,
-            tasks: getDefaultTasks()
-        };
-
+        catData = { date: today, tasks: getDefaultTasks() };
         storage[activeCatId] = catData;
         saveTasksStorage(storage);
         return catData.tasks;
@@ -275,7 +172,6 @@ function getDailyTasks(catId = null) {
     return storage[activeCatId].tasks;
 }
 
-
 function syncSharedFlagsForCat(catId, storage) {
     const target = storage[catId];
     if (!target || !Array.isArray(target.tasks)) return;
@@ -286,11 +182,7 @@ function syncSharedFlagsForCat(catId, storage) {
         if (id === catId) return;
 
         const data = storage[id];
-        if (
-            !data ||
-            data.date !== getTodayKey() ||
-            !Array.isArray(data.tasks)
-        ) return;
+        if (!data || data.date !== getTodayKey() || !Array.isArray(data.tasks)) return;
 
         data.tasks.forEach(task => {
             if (task.shared === true) sharedIds.add(task.id);
@@ -304,55 +196,25 @@ function syncSharedFlagsForCat(catId, storage) {
     });
 }
 
-
 function saveDailyTasks(date, tasks, catId = null) {
-    const activeCatId =
-        catId ||
-        (
-            typeof getActiveCatId === "function"
-                ? getActiveCatId()
-                : null
-        );
-
+    const activeCatId = catId || (typeof getActiveCatId === "function" ? getActiveCatId() : null);
     if (!activeCatId) return;
 
     const storage = getTasksStorage();
-
-    storage[activeCatId] = {
-        date,
-        tasks: normalizeTasks(tasks)
-    };
-
+    storage[activeCatId] = { date, tasks: normalizeTasks(tasks) };
     saveTasksStorage(storage);
 }
-
-
-// ========================================
-// HISTORY
-// ========================================
 
 function saveTasksToHistory(catId, date, tasks) {
     if (!catId || !date || !tasks) return;
 
     if (typeof saveDayToHistory === "function") {
-        try {
-            saveDayToHistory(catId, date, tasks);
-        } catch {
-            // История не должна ломать задачи.
-        }
+        try { saveDayToHistory(catId, date, tasks); } catch {}
     }
 }
 
-
 function saveCurrentTasksToHistory(catId = null) {
-    const activeCatId =
-        catId ||
-        (
-            typeof getActiveCatId === "function"
-                ? getActiveCatId()
-                : null
-        );
-
+    const activeCatId = catId || (typeof getActiveCatId === "function" ? getActiveCatId() : null);
     if (!activeCatId) return;
 
     const storage = getTasksStorage();
@@ -362,58 +224,27 @@ function saveCurrentTasksToHistory(catId = null) {
     saveTasksToHistory(activeCatId, catData.date, catData.tasks);
 }
 
-
-// ========================================
-// TASK UI
-// ========================================
-
 function createTask(task) {
     return `
         <div class="task">
             <div class="task-main">
                 <div class="task-icon">${task.icon}</div>
-
                 <div class="task-text">
                     <div class="task-name">
                         ${escapeHtml(task.name)}
-                        ${task.shared === true
-                            ? '<span class="task-shared-badge">Общая</span>'
-                            : ''}
+                        ${task.shared === true ? '<span class="task-shared-badge">Общая</span>' : ''}
                     </div>
-                    <div class="task-time">
-                        ${escapeHtml(task.description)}
-                    </div>
+                    <div class="task-time">${escapeHtml(task.description)}</div>
                 </div>
-
-                <button
-                    class="task-settings-button"
-                    type="button"
-                    onclick="openTaskSettings('${task.id}')"
-                    aria-label="Настройки задачи"
-                >⚙</button>
-
-                <div
-                    class="check ${task.done ? "done" : ""}"
-                    onclick="toggleTask('${task.id}')"
-                    role="button"
-                    aria-label="Отметить выполненным"
-                ></div>
+                <button class="task-settings-button" type="button" onclick="openTaskSettings('${task.id}')" aria-label="Настройки задачи">⚙</button>
+                <div class="check ${task.done ? "done" : ""}" onclick="toggleTask('${task.id}')" role="button" aria-label="Отметить выполненным"></div>
             </div>
         </div>
     `;
 }
 
-
-// ========================================
-// TASK SETTINGS MODAL
-// ========================================
-
 function openTaskSettings(taskId) {
-    const activeCatId =
-        typeof getActiveCatId === "function"
-            ? getActiveCatId()
-            : null;
-
+    const activeCatId = typeof getActiveCatId === "function" ? getActiveCatId() : null;
     if (!activeCatId) return;
 
     const task = getDailyTasks(activeCatId).find(item => item.id === taskId);
@@ -428,66 +259,30 @@ function openTaskSettings(taskId) {
 
     modal.innerHTML = `
         <div class="task-settings-overlay" onclick="closeTaskSettings()"></div>
-
-        <div
-            class="task-settings-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="taskSettingsTitle"
-        >
+        <div class="task-settings-dialog" role="dialog" aria-modal="true" aria-labelledby="taskSettingsTitle">
             <div class="task-settings-header">
                 <div class="task-settings-icon">${task.icon}</div>
-
-                <button
-                    type="button"
-                    class="task-settings-close"
-                    onclick="closeTaskSettings()"
-                    aria-label="Закрыть"
-                >×</button>
+                <button type="button" class="task-settings-close" onclick="closeTaskSettings()" aria-label="Закрыть">×</button>
             </div>
-
-            <h2 id="taskSettingsTitle" class="task-settings-title">
-                ${escapeHtml(task.name)}
-            </h2>
-
-            <p class="task-settings-description">
-                ${escapeHtml(task.description)}
-            </p>
-
+            <h2 id="taskSettingsTitle" class="task-settings-title">${escapeHtml(task.name)}</h2>
+            <p class="task-settings-description">${escapeHtml(task.description)}</p>
             <label class="task-setting-row">
                 <span class="task-setting-text">
                     <strong>Общая для всех кошек</strong>
-                    <small>
-                        Одна отметка будет применяться ко всем кошкам.
-                    </small>
+                    <small>Одна отметка будет применяться ко всем кошкам.</small>
                 </span>
-
                 <span class="task-toggle-control">
-                    <input
-                        class="task-shared-checkbox"
-                        type="checkbox"
-                        ${task.shared === true ? "checked" : ""}
-                        onchange="toggleTaskShared('${task.id}', this.checked)"
-                    >
+                    <input class="task-shared-checkbox" type="checkbox" ${task.shared === true ? "checked" : ""} onchange="toggleTaskShared('${task.id}', this.checked)">
                     <span class="task-toggle" aria-hidden="true"></span>
                 </span>
             </label>
-
-            <button
-                type="button"
-                class="task-settings-done"
-                onclick="closeTaskSettings()"
-            >Готово</button>
+            <button type="button" class="task-settings-done" onclick="closeTaskSettings()">Готово</button>
         </div>
     `;
 
     document.body.appendChild(modal);
-
-    requestAnimationFrame(() => {
-        modal.classList.add("active");
-    });
+    requestAnimationFrame(() => modal.classList.add("active"));
 }
-
 
 function closeTaskSettings() {
     const modal = document.getElementById("taskSettingsModal");
@@ -500,18 +295,9 @@ function closeTaskSettings() {
     }, 200);
 }
 
-
-// ========================================
-// SHARED TASK
-// ========================================
-
 function toggleTaskShared(taskId, requestedState) {
     const cats = typeof getCats === "function" ? getCats() : [];
-    const activeCatId =
-        typeof getActiveCatId === "function"
-            ? getActiveCatId()
-            : null;
-
+    const activeCatId = typeof getActiveCatId === "function" ? getActiveCatId() : null;
     if (!cats.length || !activeCatId) return;
 
     const storage = getTasksStorage();
@@ -523,28 +309,16 @@ function toggleTaskShared(taskId, requestedState) {
     if (!activeData) return;
 
     activeData.tasks = normalizeTasks(activeData.tasks);
-
     const activeTask = activeData.tasks.find(task => task.id === taskId);
     if (!activeTask) return;
 
-    const newSharedState =
-        typeof requestedState === "boolean"
-            ? requestedState
-            : !activeTask.shared;
+    const newSharedState = typeof requestedState === "boolean" ? requestedState : !activeTask.shared;
 
     cats.forEach(cat => {
-        if (!storage[cat.id]) {
-            storage[cat.id] = {
-                date: today,
-                tasks: getDefaultTasks()
-            };
-        }
+        if (!storage[cat.id]) storage[cat.id] = { date: today, tasks: getDefaultTasks() };
 
         if (storage[cat.id].date !== today) {
-            storage[cat.id] = {
-                date: today,
-                tasks: getDefaultTasks()
-            };
+            storage[cat.id] = { date: today, tasks: getDefaultTasks() };
         }
 
         storage[cat.id].tasks = normalizeTasks(storage[cat.id].tasks);
@@ -556,11 +330,9 @@ function toggleTaskShared(taskId, requestedState) {
         cats.forEach(cat => {
             const task = storage[cat.id].tasks.find(item => item.id === taskId);
             if (!task) return;
-
             task.shared = true;
             task.done = sharedDone;
         });
-
     } else {
         cats.forEach(cat => {
             const task = storage[cat.id].tasks.find(item => item.id === taskId);
@@ -572,26 +344,15 @@ function toggleTaskShared(taskId, requestedState) {
 
     cats.forEach(cat => {
         const catData = storage[cat.id];
-        if (!catData) return;
-
-        saveTasksToHistory(cat.id, catData.date, catData.tasks);
+        if (catData) saveTasksToHistory(cat.id, catData.date, catData.tasks);
     });
 
     closeTaskSettings();
     renderApp();
 }
 
-
-// ========================================
-// TOGGLE TASK
-// ========================================
-
 function toggleTask(taskId) {
-    const activeCatId =
-        typeof getActiveCatId === "function"
-            ? getActiveCatId()
-            : null;
-
+    const activeCatId = typeof getActiveCatId === "function" ? getActiveCatId() : null;
     if (!activeCatId) return;
 
     const storage = getTasksStorage();
@@ -603,6 +364,9 @@ function toggleTask(taskId) {
     const task = catData.tasks.find(item => item.id === taskId);
     if (!task) return;
 
+    // Считаем это локальным пользовательским изменением до любых async-запросов.
+    window.__taskLocalMutationVersion = (window.__taskLocalMutationVersion || 0) + 1;
+
     const newDoneState = !task.done;
 
     if (task.shared === true) {
@@ -610,17 +374,11 @@ function toggleTask(taskId) {
 
         cats.forEach(cat => {
             if (!storage[cat.id]) {
-                storage[cat.id] = {
-                    date: getTodayKey(),
-                    tasks: getDefaultTasks()
-                };
+                storage[cat.id] = { date: getTodayKey(), tasks: getDefaultTasks() };
             }
 
             if (storage[cat.id].date !== getTodayKey()) {
-                storage[cat.id] = {
-                    date: getTodayKey(),
-                    tasks: getDefaultTasks()
-                };
+                storage[cat.id] = { date: getTodayKey(), tasks: getDefaultTasks() };
             }
 
             storage[cat.id].tasks = normalizeTasks(storage[cat.id].tasks);
@@ -631,7 +389,6 @@ function toggleTask(taskId) {
                 catTask.done = newDoneState;
             }
         });
-
     } else {
         task.done = newDoneState;
     }
@@ -643,9 +400,7 @@ function toggleTask(taskId) {
     if (task.shared === true) {
         cats.forEach(cat => {
             const data = storage[cat.id];
-            if (data) {
-                saveTasksToHistory(cat.id, data.date, data.tasks);
-            }
+            if (data) saveTasksToHistory(cat.id, data.date, data.tasks);
         });
     } else {
         saveTasksToHistory(activeCatId, catData.date, catData.tasks);
@@ -654,32 +409,19 @@ function toggleTask(taskId) {
     renderApp();
 }
 
-
-// ========================================
-// DELETE CAT TASKS
-// ========================================
-
 function deleteCatTasks(catId) {
     if (!catId) return;
 
     const storage = getTasksStorage();
-
     if (Object.prototype.hasOwnProperty.call(storage, catId)) {
         delete storage[catId];
     }
-
     saveTasksStorage(storage);
 }
-
-
-// ========================================
-// DATE
-// ========================================
 
 function getTodayKey() {
     return formatDateKey(new Date());
 }
-
 
 function formatDateKey(date) {
     return [
