@@ -1,5 +1,5 @@
 // ========================================
-// REMINDERS SETTINGS — 1.0.2
+// REMINDERS SETTINGS — 1.0.3
 // MAX + Telegram
 // ========================================
 
@@ -61,7 +61,7 @@
         });
     }
 
-    async function saveSettings(enabled, reminderTime) {
+    async function saveSettings(enabled, reminderTime, medicalEnabled, medicalReminderDays, medicalReminderTime) {
         await ensureUser();
         const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Moscow";
         return post(SETTINGS_URL, {
@@ -70,20 +70,37 @@
             platform: getPlatform(),
             enabled,
             reminderTime,
+            medicalEnabled,
+            medicalReminderDays,
+            medicalReminderTime,
             timezone,
             catId: null
         });
     }
 
     function applySettings(settings) {
+        if (!settings) return;
+
         const enabledInput = document.getElementById("reminderEnabled");
         const timeInput = document.getElementById("reminderTime");
         const timeRow = document.getElementById("reminderTimeRow");
-        if (!enabledInput || !timeInput || !timeRow || !settings) return;
+        const medicalEnabledInput = document.getElementById("medicalReminderEnabled");
+        const medicalDaysInput = document.getElementById("medicalReminderDays");
+        const medicalTimeInput = document.getElementById("medicalReminderTime");
+        const medicalSettings = document.getElementById("medicalReminderSettings");
 
-        enabledInput.checked = settings.enabled === true;
-        timeInput.value = String(settings.reminder_time || settings.reminderTime || "20:00").slice(0, 5);
-        timeRow.hidden = !enabledInput.checked;
+        if (enabledInput && timeInput && timeRow) {
+            enabledInput.checked = settings.enabled === true;
+            timeInput.value = String(settings.reminder_time || settings.reminderTime || "20:00").slice(0, 5);
+            timeRow.hidden = !enabledInput.checked;
+        }
+
+        if (medicalEnabledInput && medicalDaysInput && medicalTimeInput && medicalSettings) {
+            medicalEnabledInput.checked = settings.medical_enabled !== false;
+            medicalDaysInput.value = String(settings.medical_reminder_days ?? 14);
+            medicalTimeInput.value = String(settings.medical_reminder_time || "20:00").slice(0, 5);
+            medicalSettings.hidden = !medicalEnabledInput.checked;
+        }
     }
 
     function renderRemindersSettings() {
@@ -113,10 +130,48 @@
                         <label for="reminderTime">Время</label>
                         <input id="reminderTime" class="input reminder-time-input" type="time" value="20:00">
                     </div>
-
-                    <button id="saveReminderSettings" class="button" type="button">Сохранить</button>
-                    <div id="reminderSettingsStatus" class="reminder-status" aria-live="polite"></div>
                 </div>
+
+                <div class="card reminders-card medical-reminders-card">
+                    <div class="reminders-row">
+                        <div class="reminders-row-text">
+                            <strong>Медицинские события</strong>
+                            <span>Напоминаем о запланированных ветеринарных и профилактических событиях.</span>
+                        </div>
+                        <label class="reminder-switch">
+                            <input id="medicalReminderEnabled" type="checkbox">
+                            <span></span>
+                        </label>
+                    </div>
+
+                    <div id="medicalReminderSettings" class="medical-reminder-settings" hidden>
+                        <div class="reminder-setting-row">
+                            <div class="reminder-setting-text">
+                                <label for="medicalReminderDays">Напоминать заранее</label>
+                                <span>Когда прислать первое напоминание</span>
+                            </div>
+                            <select id="medicalReminderDays" class="input reminder-select">
+                                <option value="0">В день события</option>
+                                <option value="1">За 1 день</option>
+                                <option value="3">За 3 дня</option>
+                                <option value="7">За 7 дней</option>
+                                <option value="14">За 14 дней</option>
+                                <option value="30">За 30 дней</option>
+                            </select>
+                        </div>
+
+                        <div class="reminder-setting-row medical-time-setting-row">
+                            <div class="reminder-setting-text">
+                                <label for="medicalReminderTime">Время</label>
+                                <span>Время отправки в выбранный день</span>
+                            </div>
+                            <input id="medicalReminderTime" class="input reminder-time-input" type="time" value="20:00">
+                        </div>
+                    </div>
+                </div>
+
+                <button id="saveReminderSettings" class="button" type="button">Сохранить</button>
+                <div id="reminderSettingsStatus" class="reminder-status" aria-live="polite"></div>
             </div>
         `;
 
@@ -127,44 +182,58 @@
         const enabledInput = document.getElementById("reminderEnabled");
         const timeInput = document.getElementById("reminderTime");
         const timeRow = document.getElementById("reminderTimeRow");
+        const medicalEnabledInput = document.getElementById("medicalReminderEnabled");
+        const medicalDaysInput = document.getElementById("medicalReminderDays");
+        const medicalTimeInput = document.getElementById("medicalReminderTime");
+        const medicalSettings = document.getElementById("medicalReminderSettings");
         const status = document.getElementById("reminderSettingsStatus");
-        if (!enabledInput || !timeInput || !timeRow) return;
+        if (!enabledInput || !timeInput || !timeRow || !medicalEnabledInput || !medicalDaysInput || !medicalTimeInput || !medicalSettings) return;
 
-        function syncTimeVisibility() {
+        function syncVisibility() {
             timeRow.hidden = !enabledInput.checked;
+            medicalSettings.hidden = !medicalEnabledInput.checked;
         }
 
-        // Сначала восстанавливаем локально, чтобы MAX не показывал исходное состояние.
         applySettings(getLocalSettings());
+        syncVisibility();
 
         try {
             const result = await getSettings();
             if (result.settings) {
                 applySettings(result.settings);
                 setLocalSettings(result.settings);
-            } else {
-                syncTimeVisibility();
             }
         } catch (error) {
-            syncTimeVisibility();
             if (status) status.textContent = "Не удалось проверить настройки на сервере.";
             console.error("[REMINDERS] Не удалось загрузить настройки:", error);
         }
 
-        enabledInput.addEventListener("change", syncTimeVisibility);
+        enabledInput.addEventListener("change", syncVisibility);
+        medicalEnabledInput.addEventListener("change", syncVisibility);
 
         document.getElementById("saveReminderSettings")?.addEventListener("click", async () => {
             const button = document.getElementById("saveReminderSettings");
             const currentStatus = document.getElementById("reminderSettingsStatus");
             const enabled = enabledInput.checked;
             const reminderTime = timeInput.value || "20:00";
-            const localSettings = { enabled, reminderTime };
+            const medicalEnabled = medicalEnabledInput.checked;
+            const medicalReminderDays = Number(medicalDaysInput.value);
+            const medicalReminderTime = medicalTimeInput.value || "20:00";
+            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Moscow";
+            const localSettings = {
+                enabled,
+                reminderTime,
+                medical_enabled: medicalEnabled,
+                medical_reminder_days: medicalReminderDays,
+                medical_reminder_time: medicalReminderTime,
+                timezone
+            };
 
             button.disabled = true;
             if (currentStatus) currentStatus.textContent = "Сохраняем…";
 
             try {
-                const result = await saveSettings(enabled, reminderTime);
+                const result = await saveSettings(enabled, reminderTime, medicalEnabled, medicalReminderDays, medicalReminderTime);
                 const saved = result.settings || localSettings;
                 setLocalSettings(saved);
                 applySettings(saved);
