@@ -1,6 +1,6 @@
 // ========================================
 // ЖИЗНЬ С КОШКОЙ
-// BACKEND INTEGRATION — 0.9.9
+// BACKEND INTEGRATION — 0.9.10
 // MAX + Telegram → Supabase
 // ========================================
 
@@ -26,33 +26,52 @@
             body: JSON.stringify(body)
         });
         const result = await response.json().catch(() => ({}));
-        if (!response.ok || !result.ok) throw new Error(result.error || `Сервер вернул ${response.status}`);
+        if (!response.ok || !result.ok) {
+            throw new Error(result.error || `Сервер вернул ${response.status}`);
+        }
         return result;
     }
 
     async function syncMaxUser() {
         const initData = getInitData();
-        if (!initData) return { ok: false, skipped: true, error: "Данные пользователя недоступны" };
-        const result = await post(AUTH_URL, { initData, platform: getPlatform() });
+        if (!initData) {
+            return { ok: false, skipped: true, error: "Данные пользователя недоступны" };
+        }
+
+        const result = await post(AUTH_URL, {
+            initData,
+            platform: getPlatform()
+        });
+
         window.appBackendUser = result.user;
         window.appPlatform = result.platform || getPlatform();
+
         await syncCats();
         return result;
     }
 
     async function loadCatsFromBackend() {
-        if (!window.appBackendUser) return { ok: false, skipped: true, cats: [] };
-        return await post(CATS_URL, { action: "list", initData: getInitData(), platform: getPlatform() });
+        if (!window.appBackendUser) {
+            return { ok: false, skipped: true, cats: [] };
+        }
+
+        return post(CATS_URL, {
+            action: "list",
+            initData: getInitData(),
+            platform: getPlatform()
+        });
     }
 
     async function saveCatToBackend(cat) {
         if (!window.appBackendUser) return { ok: false, skipped: true };
-        return await post(CATS_URL, {
+
+        return post(CATS_URL, {
             action: "upsert",
             initData: getInitData(),
             platform: getPlatform(),
             cat: {
-                serverId: cat.serverId || (typeof cat.id === "string" && !cat.id.startsWith("cat_") ? cat.id : null),
+                serverId: cat.serverId ||
+                    (typeof cat.id === "string" && !cat.id.startsWith("cat_") ? cat.id : null),
                 name: cat.name,
                 gender: cat.gender,
                 birthDate: cat.birthDate,
@@ -64,8 +83,16 @@
     }
 
     async function deleteCatFromBackend(catId) {
-        if (!window.appBackendUser || !catId) return { ok: false, skipped: true };
-        return await post(CATS_URL, { action: "delete", initData: getInitData(), platform: getPlatform(), catId });
+        if (!window.appBackendUser || !catId) {
+            return { ok: false, skipped: true };
+        }
+
+        return post(CATS_URL, {
+            action: "delete",
+            initData: getInitData(),
+            platform: getPlatform(),
+            catId
+        });
     }
 
     function backendCatToLocal(cat) {
@@ -84,6 +111,7 @@
 
     function migrateDailyTasksCatIds(localCats, remoteCats) {
         let storage = {};
+
         try {
             storage = JSON.parse(localStorage.getItem("dailyTasks") || "{}");
         } catch {
@@ -98,6 +126,7 @@
                 cat.id === remoteCat.id ||
                 cat.name === remoteCat.name
             );
+
             if (!localCat || localCat.id === remoteCat.id) return;
 
             if (storage[localCat.id] && !storage[remoteCat.id]) {
@@ -113,10 +142,20 @@
     }
 
     async function loadTaskCompletionsFromBackend(catId = null, date = null) {
-        if (!window.appBackendUser) return { ok: false, skipped: true, completions: [] };
+        if (!window.appBackendUser) {
+            return { ok: false, skipped: true, completions: [] };
+        }
+
         const targetCatId = catId || window.getActiveCatId?.();
         const targetDate = date || window.getTodayKey?.();
-        if (!targetCatId || !targetDate) return { ok: false, skipped: true, completions: [] };
+
+        if (!targetCatId || !targetDate) {
+            return { ok: false, skipped: true, completions: [] };
+        }
+
+        // Не даём позднему ответу сервера затереть отметку,
+        // которую пользователь поставил уже после начала загрузки.
+        const mutationVersionAtRequest = window.__taskLocalMutationVersion || 0;
 
         const result = await post(TASKS_URL, {
             action: "get",
@@ -126,13 +165,12 @@
             date: targetDate
         });
 
-        const completedIds = new Set(
-            (result.completions || [])
-                .filter(item => item.completed === true)
-                .map(item => String(item.task_id))
-        );
+        if ((window.__taskLocalMutationVersion || 0) !== mutationVersionAtRequest) {
+            return { ...result, localMutationWon: true };
+        }
 
         let storage = {};
+
         try {
             storage = JSON.parse(localStorage.getItem("dailyTasks") || "{}");
         } catch {
@@ -140,24 +178,41 @@
         }
 
         let catData = storage[targetCatId];
+
         if (!catData?.tasks && typeof window.getDailyTasks === "function") {
             window.getDailyTasks(targetCatId);
+
             try {
                 storage = JSON.parse(localStorage.getItem("dailyTasks") || "{}");
             } catch {
                 storage = {};
             }
+
             catData = storage[targetCatId];
         }
 
         if (!catData?.tasks) return result;
 
+        const completedIds = new Set(
+            (result.completions || [])
+                .filter(item => item.completed === true)
+                .map(item => String(item.task_id))
+        );
+
         catData.tasks.forEach(task => {
             task.done = completedIds.has(String(task.id));
         });
 
-        localStorage.setItem("dailyTasks", JSON.stringify(storage));
+        saveTasksStorageSafely(storage);
         return result;
+    }
+
+    function saveTasksStorageSafely(storage) {
+        try {
+            localStorage.setItem("dailyTasks", JSON.stringify(storage));
+        } catch (error) {
+            console.error("[BACKEND] Не удалось сохранить локальные задачи:", error);
+        }
     }
 
     async function syncCats() {
@@ -187,20 +242,27 @@
 
                 window.setActiveCatId(activeRemote ? activeRemote.id : mapped[0].id);
                 window.maxCatsSyncStatus = "success";
+
                 await loadTaskCompletionsFromBackend();
                 return;
             }
 
             for (const localCat of localCats) {
                 const saved = await saveCatToBackend(localCat);
+
                 if (saved?.ok && saved.cat) {
                     const mapped = backendCatToLocal(saved.cat);
                     const current = window.getCats();
                     const index = current.findIndex(cat => cat.id === localCat.id);
+
                     if (index >= 0) current[index] = mapped;
                     else current.push(mapped);
+
                     window.saveCats(current);
-                    if (activeId === localCat.id) window.setActiveCatId(mapped.id);
+
+                    if (activeId === localCat.id) {
+                        window.setActiveCatId(mapped.id);
+                    }
                 }
             }
 
@@ -217,7 +279,7 @@
             return { ok: false, skipped: true };
         }
 
-        return await post(TASKS_URL, {
+        return post(TASKS_URL, {
             action: "set",
             initData: getInitData(),
             platform: getPlatform(),
@@ -238,15 +300,19 @@
 
             if (window.appBackendUser && typeof window.getActiveCat === "function") {
                 const cat = window.getActiveCat();
+
                 if (cat) {
                     try {
                         const saved = await saveCatToBackend(cat);
+
                         if (saved?.ok && saved.cat) {
                             const mapped = backendCatToLocal(saved.cat);
                             const cats = window.getCats();
                             const index = cats.findIndex(item => item.id === cat.id);
+
                             if (index >= 0) cats[index] = mapped;
                             else cats.push(mapped);
+
                             window.saveCats(cats);
                             window.setActiveCatId(mapped.id);
                             window.renderApp?.();
@@ -282,8 +348,14 @@
 
                 if (!catId || !task || !date) return;
 
-                saveTaskCompletionToBackend(catId, taskId, date, task.done === true)
-                    .catch(error => console.error("[BACKEND] Не удалось сохранить отметку:", error));
+                saveTaskCompletionToBackend(
+                    catId,
+                    taskId,
+                    date,
+                    task.done === true
+                ).catch(error => {
+                    console.error("[BACKEND] Не удалось сохранить отметку:", error);
+                });
             } catch (error) {
                 console.error("[BACKEND] Ошибка синхронизации задачи:", error);
             }
