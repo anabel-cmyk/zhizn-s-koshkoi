@@ -132,7 +132,7 @@
                     </div>
                 </div>
 
-                <div class="card reminders-card medical-reminders-card">
+                <div class="card reminders-card">
                     <div class="reminders-row">
                         <div class="reminders-row-text">
                             <strong>Медицинские события</strong>
@@ -144,13 +144,12 @@
                         </label>
                     </div>
 
-                    <div id="medicalReminderSettings" class="medical-reminder-settings" hidden>
-                        <div class="reminder-setting-row">
-                            <div class="reminder-setting-text">
+                    <div id="medicalReminderSettings" hidden>
+                        <div class="reminder-time-row">
+                            <div>
                                 <label for="medicalReminderDays">Напоминать заранее</label>
-                                <span>Когда прислать первое напоминание</span>
                             </div>
-                            <select id="medicalReminderDays" class="input reminder-select">
+                            <select id="medicalReminderDays" class="input reminder-time-input">
                                 <option value="0">В день события</option>
                                 <option value="1">За 1 день</option>
                                 <option value="3">За 3 дня</option>
@@ -160,11 +159,8 @@
                             </select>
                         </div>
 
-                        <div class="reminder-setting-row medical-time-setting-row">
-                            <div class="reminder-setting-text">
-                                <label for="medicalReminderTime">Время</label>
-                                <span>Время отправки в выбранный день</span>
-                            </div>
+                        <div class="reminder-time-row">
+                            <label for="medicalReminderTime">Время</label>
                             <input id="medicalReminderTime" class="input reminder-time-input" type="time" value="20:00">
                         </div>
                     </div>
