@@ -8,6 +8,7 @@
     const AUTH_URL = "https://qligzwdxxytmsflzbpqy.supabase.co/functions/v1/max-auth";
     const CATS_URL = "https://qligzwdxxytmsflzbpqy.supabase.co/functions/v1/max-cats";
     const TASKS_URL = "https://qligzwdxxytmsflzbpqy.supabase.co/functions/v1/max-tasks";
+    const HEALTH_URL = "https://qligzwdxxytmsflzbpqy.supabase.co/functions/v1/health-events";
 
     function getPlatform() {
         return window.Telegram?.WebApp?.initData ? "telegram" : "max";
@@ -47,6 +48,7 @@
         window.appPlatform = result.platform || getPlatform();
 
         await syncCats();
+        await syncHealthEvents();
         return result;
     }
 
@@ -153,8 +155,6 @@
             return { ok: false, skipped: true, completions: [] };
         }
 
-        // Не даём позднему ответу сервера затереть отметку,
-        // которую пользователь поставил уже после начала загрузки.
         const mutationVersionAtRequest = window.__taskLocalMutationVersion || 0;
 
         const result = await post(TASKS_URL, {
@@ -274,6 +274,109 @@
         }
     }
 
+    function mapHealthEventToLocal(event) {
+        return {
+            id: event.id,
+            type: event.type,
+            title: event.title || "Медицинское событие",
+            emoji: event.emoji || "🩺",
+            date: event.event_date || "",
+            nextDate: event.next_date || "",
+            reminderDays: Number(event.reminder_days ?? 14),
+            note: event.note || ""
+        };
+    }
+
+    async function loadHealthEventsFromBackend() {
+        if (!window.appBackendUser) return { ok: false, skipped: true, events: [] };
+        return post(HEALTH_URL, {
+            action: "list",
+            initData: getInitData(),
+            platform: getPlatform()
+        });
+    }
+
+    async function saveHealthEventToBackend(catId, event) {
+        if (!window.appBackendUser || !catId || !event) return { ok: false, skipped: true };
+
+        return post(HEALTH_URL, {
+            action: "upsert",
+            initData: getInitData(),
+            platform: getPlatform(),
+            event: {
+                id: event.id && !String(event.id).startsWith("health_") ? event.id : null,
+                catId,
+                type: event.type,
+                title: event.title,
+                emoji: event.emoji,
+                date: event.date,
+                nextDate: event.nextDate,
+                reminderDays: event.reminderDays,
+                note: event.note
+            }
+        });
+    }
+
+    async function deleteHealthEventFromBackend(eventId) {
+        if (!window.appBackendUser || !eventId || String(eventId).startsWith("health_")) {
+            return { ok: false, skipped: true };
+        }
+
+        return post(HEALTH_URL, {
+            action: "delete",
+            initData: getInitData(),
+            platform: getPlatform(),
+            eventId
+        });
+    }
+
+    async function syncHealthEvents() {
+        if (!window.appBackendUser || typeof window.getHealthData !== "function") return;
+
+        try {
+            const result = await loadHealthEventsFromBackend();
+            if (!result?.ok) return;
+
+            const remoteEvents = Array.isArray(result.events) ? result.events : [];
+            const localData = window.getHealthData();
+            const localEvents = [];
+
+            Object.entries(localData || {}).forEach(([catId, profile]) => {
+                (profile?.medicalEvents || []).forEach(event => {
+                    localEvents.push({ catId, event });
+                });
+            });
+
+            if (!remoteEvents.length && localEvents.length) {
+                for (const item of localEvents) {
+                    const saved = await saveHealthEventToBackend(item.catId, item.event);
+                    if (saved?.ok && saved.event && typeof window.getHealthData === "function") {
+                        const data = window.getHealthData();
+                        const profile = data[item.catId] || { medicalEvents: [] };
+                        const index = profile.medicalEvents.findIndex(e => e.id === item.event.id);
+                        const mapped = mapHealthEventToLocal(saved.event);
+                        if (index >= 0) profile.medicalEvents[index] = mapped;
+                        else profile.medicalEvents.push(mapped);
+                        data[item.catId] = profile;
+                        window.saveHealthData(data);
+                    }
+                }
+                return;
+            }
+
+            if (remoteEvents.length) {
+                const data = {};
+                remoteEvents.forEach(event => {
+                    if (!data[event.cat_id]) data[event.cat_id] = { medicalEvents: [] };
+                    data[event.cat_id].medicalEvents.push(mapHealthEventToLocal(event));
+                });
+                window.saveHealthData(data);
+            }
+        } catch (error) {
+            console.error("[BACKEND] Ошибка синхронизации здоровья:", error);
+        }
+    }
+
     async function saveTaskCompletionToBackend(catId, taskId, date, completed) {
         if (!window.appBackendUser || !catId || !taskId || !date) {
             return { ok: false, skipped: true };
@@ -365,6 +468,56 @@
         window.toggleTask = wrappedToggleTask;
     }
 
+    function installHealthSaveBridge() {
+        if (typeof window.createHealthEvent === "function" && !window.createHealthEvent.__backendWrapped) {
+            const originalCreate = window.createHealthEvent;
+            const wrappedCreate = function (catId, eventData) {
+                const event = originalCreate(catId, eventData);
+                if (event && window.appBackendUser) {
+                    saveHealthEventToBackend(catId, event).then(saved => {
+                        if (saved?.ok && saved.event) {
+                            const data = window.getHealthData?.() || {};
+                            const profile = data[catId] || { medicalEvents: [] };
+                            const index = profile.medicalEvents.findIndex(item => item.id === event.id);
+                            if (index >= 0) profile.medicalEvents[index] = mapHealthEventToLocal(saved.event);
+                            data[catId] = profile;
+                            window.saveHealthData?.(data);
+                        }
+                    }).catch(error => console.error("[BACKEND] Не удалось сохранить событие здоровья:", error));
+                }
+                return event;
+            };
+            wrappedCreate.__backendWrapped = true;
+            window.createHealthEvent = wrappedCreate;
+        }
+
+        if (typeof window.updateHealthEvent === "function" && !window.updateHealthEvent.__backendWrapped) {
+            const originalUpdate = window.updateHealthEvent;
+            const wrappedUpdate = function (catId, eventId, eventData) {
+                const event = originalUpdate(catId, eventId, eventData);
+                if (event && window.appBackendUser) {
+                    saveHealthEventToBackend(catId, event).catch(error => console.error("[BACKEND] Не удалось обновить событие здоровья:", error));
+                }
+                return event;
+            };
+            wrappedUpdate.__backendWrapped = true;
+            window.updateHealthEvent = wrappedUpdate;
+        }
+
+        if (typeof window.deleteHealthEvent === "function" && !window.deleteHealthEvent.__backendWrapped) {
+            const originalDelete = window.deleteHealthEvent;
+            const wrappedDelete = function (catId, eventId) {
+                const result = originalDelete(catId, eventId);
+                if (result && window.appBackendUser) {
+                    deleteHealthEventFromBackend(eventId).catch(error => console.error("[BACKEND] Не удалось удалить событие здоровья:", error));
+                }
+                return result;
+            };
+            wrappedDelete.__backendWrapped = true;
+            window.deleteHealthEvent = wrappedDelete;
+        }
+    }
+
     window.syncMaxUser = syncMaxUser;
     window.loadCatsFromBackend = loadCatsFromBackend;
     window.saveCatToBackend = saveCatToBackend;
@@ -373,7 +526,12 @@
     window.loadTaskCompletionsFromBackend = loadTaskCompletionsFromBackend;
     window.syncCatsWithBackend = syncCats;
     window.getAppPlatform = getPlatform;
+    window.loadHealthEventsFromBackend = loadHealthEventsFromBackend;
+    window.saveHealthEventToBackend = saveHealthEventToBackend;
+    window.deleteHealthEventFromBackend = deleteHealthEventFromBackend;
+    window.syncHealthEvents = syncHealthEvents;
 
     installCatSaveBridge();
     installTaskSaveBridge();
+    installHealthSaveBridge();
 })();
