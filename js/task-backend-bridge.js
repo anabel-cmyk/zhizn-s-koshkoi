@@ -1,41 +1,27 @@
 // ========================================
-// TASK BACKEND BRIDGE — 1.0.4
+// TASK BACKEND BRIDGE — 1.0.0
 // Синхронизация локальных отметок задач
 // с Supabase для вечерних напоминаний.
 // ========================================
 
 (function () {
     async function ensureBackendReady() {
-        if (window.appBackendUser) return true;
-        if (typeof window.syncMaxUser !== "function") return false;
-
-        try {
-            const result = await window.syncMaxUser();
-            return result?.ok === true && !!window.appBackendUser;
-        } catch (error) {
-            console.error("[BACKEND] Не удалось авторизовать пользователя:", error);
-            return false;
-        }
+        return !!window.appBackendUser;
     }
 
-    async function resolveServerCatId(localCatId) {
-        if (!localCatId) return null;
+    async function resolveServerCatId(localCatId, remoteCats) {
+        if (!localCatId || !Array.isArray(remoteCats)) return null;
 
         const cats = typeof window.getCats === "function" ? window.getCats() : [];
         const localCat = cats.find(cat => String(cat.id) === String(localCatId));
 
         if (localCat?.serverId) return localCat.serverId;
-        if (localCatId && !String(localCatId).startsWith("cat_")) {
-            const remote = await window.loadCatsFromBackend?.();
-            if (remote?.ok && Array.isArray(remote.cats) && remote.cats.some(cat => String(cat.id) === String(localCatId))) {
-                return localCatId;
-            }
+        if (!String(localCatId).startsWith("cat_") &&
+            remoteCats.some(cat => String(cat.id) === String(localCatId))) {
+            return localCatId;
         }
 
-        const remote = await window.loadCatsFromBackend?.();
-        if (!remote?.ok || !Array.isArray(remote.cats)) return null;
-
-        const match = remote.cats.find(cat =>
+        const match = remoteCats.find(cat =>
             (localCat && cat.name === localCat.name) ||
             (localCat?.serverId && String(cat.id) === String(localCat.serverId))
         );
@@ -45,19 +31,21 @@
 
     async function syncTodayTasks() {
         if (typeof window.saveTaskCompletionToBackend !== "function") return false;
-
-        const ready = await ensureBackendReady();
-        if (!ready) return false;
+        if (!(await ensureBackendReady())) return false;
 
         const date = window.getTodayKey?.();
         if (!date) return false;
 
-        let storage = {};
+        let storage;
         try {
             storage = JSON.parse(localStorage.getItem("dailyTasks") || "{}");
         } catch {
             return false;
         }
+
+        const remote = await window.loadCatsFromBackend?.();
+        const remoteCats = remote?.ok && Array.isArray(remote.cats) ? remote.cats : [];
+        if (!remoteCats.length) return false;
 
         const requests = [];
         let found = false;
@@ -66,11 +54,8 @@
             const catData = storage[localCatId];
             if (!catData || catData.date !== date || !Array.isArray(catData.tasks)) continue;
 
-            const serverCatId = await resolveServerCatId(localCatId);
-            if (!serverCatId) {
-                console.warn("[BACKEND] Не найден серверный ID кошки:", localCatId);
-                continue;
-            }
+            const serverCatId = await resolveServerCatId(localCatId, remoteCats);
+            if (!serverCatId) continue;
 
             found = true;
 
@@ -93,18 +78,23 @@
             }
         }
 
-        localStorage.setItem("dailyTasks", JSON.stringify(storage));
+        try {
+            localStorage.setItem("dailyTasks", JSON.stringify(storage));
+        } catch (error) {
+            console.error("[BACKEND] Не удалось сохранить локальные задачи:", error);
+        }
+
         await Promise.all(requests);
         return found;
     }
 
     function syncWhenReady(attempt = 0) {
         syncTodayTasks().then(done => {
-            if (done) return;
-            if (attempt < 20) setTimeout(() => syncWhenReady(attempt + 1), 500);
+            if (done || attempt >= 5) return;
+            setTimeout(() => syncWhenReady(attempt + 1), 1000);
         }).catch(error => {
-            console.error("[BACKEND] Ошибка синхронизации задач:", error);
-            if (attempt < 20) setTimeout(() => syncWhenReady(attempt + 1), 500);
+            console.error("[BACKEND] Ошибка фоновой синхронизации задач:", error);
+            if (attempt < 5) setTimeout(() => syncWhenReady(attempt + 1), 1000);
         });
     }
 
@@ -112,13 +102,15 @@
         if (document.body.__taskBackendBridgeInstalled) return;
         document.body.__taskBackendBridgeInstalled = true;
 
-        // Важно: изменение true/false уже перехватывает backend.js через
-        // window.toggleTask. Второй click-listener здесь создавал гонку:
-        // после снятия галочки он мог повторно записать старое состояние.
-        // Этот мост теперь отвечает только за первоначальную/периодическую
-        // синхронизацию локальных данных, а не за повторную отправку клика.
-        setTimeout(() => syncWhenReady(), 1000);
-        setTimeout(() => syncWhenReady(), 3000);
+        // backend.js уже сохраняет каждое нажатие галочки.
+        // Этот мост делает только одну начальную синхронизацию после загрузки.
+        const start = () => syncWhenReady();
+
+        if (document.readyState === "complete") {
+            start();
+        } else {
+            window.addEventListener("load", start, { once: true });
+        }
     }
 
     if (document.readyState === "loading") {
