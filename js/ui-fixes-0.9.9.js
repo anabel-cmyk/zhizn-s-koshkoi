@@ -11,17 +11,16 @@
         }
     }
 
-    // The diary has its own cat switcher. Keep the global header avatar
-    // synchronized with the cat selected there as well.
+    // Keep the global header avatar synchronized with diary navigation.
     const originalSwitchDiaryCat = window.switchDiaryCat;
     if (typeof originalSwitchDiaryCat === "function") {
         window.switchDiaryCat = function (catId) {
-            originalSwitchDiaryCat.apply(this, arguments);
+            const result = originalSwitchDiaryCat.apply(this, arguments);
             syncHeaderCat();
+            return result;
         };
     }
 
-    // Also refresh the header after diary/calendar rendering.
     const originalOpenHistory = window.openHistory;
     if (typeof originalOpenHistory === "function") {
         window.openHistory = function () {
@@ -31,10 +30,13 @@
         };
     }
 
+    // The event form is created dynamically. Enhance each textarea only once;
+    // the previous version added another input listener after every document click.
     function setupEventNote() {
         const note = document.getElementById("calendarEventNote");
-        if (!note) return;
+        if (!note || note.dataset.uiEnhanced === "1") return;
 
+        note.dataset.uiEnhanced = "1";
         note.classList.add("note-placeholder-centered");
 
         const syncNoteState = () => {
@@ -45,16 +47,12 @@
         syncNoteState();
     }
 
-    // The event form is created dynamically, so observe the document for it.
     if (document.readyState !== "loading") setupEventNote();
     document.addEventListener("click", () => setTimeout(setupEventNote, 0));
 
     // ========================================
     // CAT GENDER ICON
     // ========================================
-    // Visual marker only: ♀ for a female cat, ♂ for a male cat.
-    // It is added after the dashboard renders, so switching cats and
-    // navigating back to the home screen always refreshes the marker.
     function getCatGenderIcon(gender) {
         const value = String(gender || "").toLowerCase().trim();
         if (["female", "f", "женский", "самка", "кошка"].includes(value)) return "♀";
@@ -67,9 +65,14 @@
         const cat = typeof window.getActiveCat === "function" ? window.getActiveCat() : null;
         if (!title || !cat) return;
 
-        title.querySelector(".cat-gender-icon")?.remove();
-
         const icon = getCatGenderIcon(cat.gender);
+        const current = title.querySelector(".cat-gender-icon");
+
+        // Avoid DOM writes when nothing changed. This also prevents the
+        // MutationObserver feedback loop that the old implementation created.
+        if ((current?.textContent || "") === icon) return;
+        current?.remove();
+
         if (!icon) return;
 
         const span = document.createElement("span");
@@ -79,22 +82,28 @@
         title.appendChild(span);
     }
 
-    function watchCatGenderIcon() {
-        const content = document.getElementById("content");
-        if (!content || content.__genderObserver) return;
-
-        const observer = new MutationObserver(() => {
-            requestAnimationFrame(renderCatGenderIcon);
-        });
-        observer.observe(content, { childList: true, subtree: true });
-        content.__genderObserver = observer;
-
-        renderCatGenderIcon();
+    // Rendering is already centralized in app.js. A small wrapper is enough;
+    // observing the entire content subtree caused repeated callbacks and
+    // unnecessary work on every DOM mutation.
+    const originalRenderApp = window.renderApp;
+    if (typeof originalRenderApp === "function") {
+        window.renderApp = function () {
+            const result = originalRenderApp.apply(this, arguments);
+            requestAnimationFrame(() => {
+                renderCatGenderIcon();
+                setupEventNote();
+            });
+            return result;
+        };
     }
 
     if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", watchCatGenderIcon, { once: true });
+        document.addEventListener("DOMContentLoaded", () => {
+            renderCatGenderIcon();
+            setupEventNote();
+        }, { once: true });
     } else {
-        watchCatGenderIcon();
+        renderCatGenderIcon();
+        setupEventNote();
     }
 })();
