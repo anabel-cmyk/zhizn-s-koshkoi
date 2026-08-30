@@ -75,6 +75,14 @@ document.addEventListener("DOMContentLoaded", () => {
     migrateOldCat();
     updateHeaderCat();
     renderApp();
+    // Telegram Main Mini App: honor a startapp=reminders deep link.
+    // Defer until all existing scripts (including reminders-settings.js) have initialized.
+    setTimeout(() => {
+        const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
+        if (startParam === "reminders" && typeof window.renderRemindersSettings === "function") {
+            window.renderRemindersSettings();
+        }
+    }, 0);
     document.addEventListener("click", event => {
         const menu = document.getElementById("headerMenu");
         const header = document.querySelector(".header");
